@@ -6,14 +6,38 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {"key": "baseUrl", "value": "http://localhost:8080"},
-    {"key": "accessToken", "value": ""},
-    {"key": "refreshToken", "value": ""},
-    {"key": "customerAccessToken", "value": ""},
-    {"key": "sellerAccessToken", "value": ""},
-    {"key": "adminAccessToken", "value": ""},
-    {"key": "productId", "value": ""},
-    {"key": "offerId", "value": ""}
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "customerAccessToken",
+      "value": ""
+    },
+    {
+      "key": "sellerAccessToken",
+      "value": ""
+    },
+    {
+      "key": "adminAccessToken",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "offerId",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -23,123 +47,163 @@
           "name": "Register Customer",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/register",
             "body": {
               "mode": "raw",
               "raw": "{\"email\":\"customer@test.com\",\"password\":\"Password123!\",\"firstName\":\"John\",\"lastName\":\"Doe\",\"roles\":[\"CUSTOMER\"]}"
             }
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const r = pm.response.json();",
-                "pm.environment.set('accessToken', r.accessToken);",
-                "pm.environment.set('customerAccessToken', r.accessToken);",
-                "pm.environment.set('refreshToken', r.refreshToken);",
-                "pm.test('Status 201', () => pm.response.to.have.status(201));"
-              ]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.environment.set('accessToken', r.accessToken);",
+                  "pm.environment.set('customerAccessToken', r.accessToken);",
+                  "pm.environment.set('refreshToken', r.refreshToken);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
           "name": "Register Seller",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/register",
             "body": {
               "mode": "raw",
               "raw": "{\"email\":\"seller@test.com\",\"password\":\"Password123!\",\"firstName\":\"Jane\",\"lastName\":\"Smith\",\"roles\":[\"SELLER\"]}"
             }
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const r = pm.response.json();",
-                "pm.environment.set('accessToken', r.accessToken);",
-                "pm.environment.set('sellerAccessToken', r.accessToken);",
-                "pm.environment.set('refreshToken', r.refreshToken);",
-                "pm.test('Status 201', () => pm.response.to.have.status(201));"
-              ]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.environment.set('accessToken', r.accessToken);",
+                  "pm.environment.set('sellerAccessToken', r.accessToken);",
+                  "pm.environment.set('refreshToken', r.refreshToken);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
           "name": "Login",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/login",
             "body": {
               "mode": "raw",
               "raw": "{\"email\":\"seller@test.com\",\"password\":\"Password123!\"}"
             }
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const r = pm.response.json();",
-                "pm.environment.set('accessToken', r.accessToken);",
-                "pm.environment.set('refreshToken', r.refreshToken);",
-                "pm.test('Status 200', () => pm.response.to.have.status(200));"
-              ]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.environment.set('accessToken', r.accessToken);",
+                  "pm.environment.set('refreshToken', r.refreshToken);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
           "name": "Register Admin",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/register",
             "body": {
               "mode": "raw",
               "raw": "{\"email\":\"admin@test.com\",\"password\":\"Password123!\",\"firstName\":\"Admin\",\"lastName\":\"User\",\"roles\":[\"ADMIN\"]}"
             }
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const r = pm.response.json();",
-                "pm.environment.set('adminAccessToken', r.accessToken);",
-                "pm.test('Status 201', () => pm.response.to.have.status(201));"
-              ]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.environment.set('adminAccessToken', r.accessToken);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
           "name": "Refresh Token",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/refresh",
             "body": {
               "mode": "raw",
               "raw": "{\"refreshToken\":\"{{refreshToken}}\"}"
             }
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const r = pm.response.json();",
-                "pm.environment.set('accessToken', r.accessToken);",
-                "pm.environment.set('refreshToken', r.refreshToken);",
-                "pm.test('Status 200', () => pm.response.to.have.status(200));"
-              ]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.environment.set('accessToken', r.accessToken);",
+                  "pm.environment.set('refreshToken', r.refreshToken);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
           "name": "Logout",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/logout",
             "body": {
               "mode": "raw",
@@ -151,7 +215,12 @@
           "name": "Me (Current User)",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/me"
           }
         }
@@ -164,7 +233,12 @@
           "name": "Get My User Profile",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/users/me"
           }
         },
@@ -173,8 +247,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{customerAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/users/me",
             "body": {
@@ -187,7 +267,12 @@
           "name": "Give KVKK Consent",
           "request": {
             "method": "POST",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/users/me/kvkk-consent"
           }
         },
@@ -196,8 +281,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{customerAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/users/me/addresses",
             "body": {
@@ -210,7 +301,12 @@
           "name": "List Addresses",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/users/me/addresses"
           }
         }
@@ -223,7 +319,12 @@
           "name": "Get My Seller Profile",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/sellers/me"
           }
         },
@@ -232,8 +333,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/sellers/me",
             "body": {
@@ -252,8 +359,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{adminAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/products",
             "body": {
@@ -261,27 +374,38 @@
               "raw": "{\"title\":\"Akilli Telefon Çığır\",\"description\":\"Day 2 demo product\",\"shortDescription\":\"Demo phone\",\"categoryId\":\"00000000-0000-0000-0000-000000000001\",\"attributes\":{\"color\":\"black\",\"memory\":\"128GB\"}}"
             }
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const r = pm.response.json();",
-                "pm.environment.set('productId', r.id);",
-                "pm.test('Status 201', () => pm.response.to.have.status(201));"
-              ]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.environment.set('productId', r.id);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
           "name": "Activate Product",
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{adminAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/products/{{productId}}",
-            "body": {"mode": "raw", "raw": "{\"status\":\"ACTIVE\"}"}
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"ACTIVE\"}"
+            }
           }
         },
         {
@@ -310,8 +434,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{sellerAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sellerAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/offers",
             "body": {
@@ -319,27 +449,38 @@
               "raw": "{\"productId\":\"{{productId}}\",\"sku\":\"DAY2-SKU-001\",\"price\":100.00,\"listPrice\":120.00,\"cargoProvider\":\"ARAS\",\"cargoPrice\":0.00,\"estimatedDeliveryDays\":2,\"freeShippingThreshold\":500.00}"
             }
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "const r = pm.response.json();",
-                "pm.environment.set('offerId', r.id);",
-                "pm.test('Status 201', () => pm.response.to.have.status(201));"
-              ]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const r = pm.response.json();",
+                  "pm.environment.set('offerId', r.id);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
           "name": "Activate Offer",
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{sellerAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sellerAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/offers/{{offerId}}",
-            "body": {"mode": "raw", "raw": "{\"status\":\"ACTIVE\"}"}
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"ACTIVE\"}"
+            }
           }
         },
         {
@@ -347,11 +488,20 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{sellerAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sellerAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/offers/{{offerId}}",
-            "body": {"mode": "raw", "raw": "{\"price\":150.00}"}
+            "body": {
+              "mode": "raw",
+              "raw": "{\"price\":150.00}"
+            }
           }
         },
         {
@@ -366,7 +516,12 @@
           "name": "My Offers",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{sellerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sellerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/offers/my"
           }
         }
@@ -379,7 +534,12 @@
           "name": "Get Cart",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cart"
           }
         },
@@ -388,18 +548,32 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{customerAccessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "url": "{{baseUrl}}/api/cart/items",
-            "body": {"mode": "raw", "raw": "{\"offerId\":\"{{offerId}}\",\"quantity\":2}"}
+            "body": {
+              "mode": "raw",
+              "raw": "{\"offerId\":\"{{offerId}}\",\"quantity\":2}"
+            }
           }
         },
         {
           "name": "Validate Cart",
           "request": {
             "method": "POST",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cart/validate"
           }
         },
@@ -407,7 +581,12 @@
           "name": "Update Quantity",
           "request": {
             "method": "PUT",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cart/items/{{offerId}}?quantity=5"
           }
         },
@@ -415,7 +594,12 @@
           "name": "Remove Item",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cart/items/{{offerId}}"
           }
         },
@@ -423,8 +607,277 @@
           "name": "Clear Cart",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{customerAccessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cart"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Get Offer Inventory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/offers/{{offerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "offers",
+                "{{offerId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reserve Inventory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/reserve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "reserve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"offerId\": \"{{offerId}}\",\n  \"quantity\": 1,\n  \"reservationKey\": \"{{orderId}}:{{offerId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Confirm Order Inventory",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/orders/{{orderId}}/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "orders",
+                "{{orderId}}",
+                "confirm"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Release Order Inventory",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/orders/{{orderId}}/release",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "orders",
+                "{{orderId}}",
+                "release"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Seller Adjust Stock",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/offers/{{offerId}}/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventory",
+                "offers",
+                "{{offerId}}",
+                "stock"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newAvailableQuantity\": 25,\n  \"lowStockThreshold\": 5\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{checkoutIdempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "checkout"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressId\": \"{{addressId}}\",\n  \"paymentMethod\": \"MOCK_CARD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List My Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{orderId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "My Notification Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Notification Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "logs"
+              ]
+            }
           }
         }
       ]

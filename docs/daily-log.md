@@ -62,3 +62,32 @@
 
 ### Notes
 - Testcontainers tests are configured to skip cleanly when Docker is unavailable in the local sandbox.
+
+## Gün 3 — 2026-04-27
+
+### Completed
+- Added inventory-service (port 8085):
+  - Offer-based inventory items with optimistic locking fields
+  - Reservation pattern: reserve, confirm, release, expiration job
+  - OFFER_CREATED Kafka consumer creates inventory item idempotently
+  - Inventory outbox events for reserved, failed, released, confirmed, and low-stock flows
+- Added order-service (port 8089):
+  - Checkout saga orchestrator for cart validation, address lookup, fraud stub, inventory reservation, and PAYMENT_PENDING order creation
+  - Idempotency-key storage and replay/conflict handling
+  - Payment success/failure Kafka consumer with inventory confirm/release compensation
+  - Payment timeout job cancels pending orders and releases reservations
+- Added notification-service (port 8094):
+  - Kafka consumers for USER_REGISTERED, ORDER_CONFIRMED, and ORDER_CANCELLED
+  - RabbitMQ email job queue + DLQ
+  - notification_log persistence for sent/failed email attempts
+- Updated api-gateway routes for inventory, checkout/orders, and notifications
+- Added internal user/address and cart validation endpoints needed by checkout/notifications
+- Expanded Postman collection with Inventory, Orders, and Notifications requests
+- Added unit test coverage for inventory reservation, checkout idempotency, and notification email logging
+
+### Verification
+- `mvn -pl services/inventory-service,services/order-service,services/notification-service -am -DskipTests test` passed.
+- `mvn -pl services/inventory-service,services/order-service,services/notification-service -am test` passed.
+
+### Notes
+- Notification service adds RabbitMQ AMQP dependencies, so the first Maven run may need network/cache access.
