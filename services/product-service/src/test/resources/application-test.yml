@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+jwt:
+  secret: test-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm-testing
+  access-token-expiration-ms: 900000
+  refresh-token-expiration-ms: 604800000
+
+services:
+  seller:
+    url: http://localhost:18083
+
+logging:
+  level:
+    com.smartcommerce: DEBUG

@@ -43,7 +43,10 @@
 
         <module>services/api-gateway</module>
         <module>services/auth-service</module>
+        <module>services/user-service</module>
         <module>services/seller-service</module>
+        <module>services/product-service</module>
+        <module>services/cart-service</module>
     </modules>
 
     <dependencyManagement>
@@ -148,6 +151,12 @@
     </dependencyManagement>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>

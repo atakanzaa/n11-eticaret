@@ -41,4 +41,10 @@ public class SellerController {
     public SellerDto getSeller(@PathVariable UUID id) {
         return sellerService.getById(id);
     }
+
+    @GetMapping("/by-user/{userId}")
+    @Operation(summary = "Get seller by user ID (internal)")
+    public SellerDto getSellerByUserId(@PathVariable UUID userId) {
+        return sellerService.getByUserId(userId);
+    }
 }

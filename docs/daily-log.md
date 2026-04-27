@@ -34,3 +34,31 @@
 - user-service (profiles + addresses)
 - cart-service (Redis-backed cart)
 - catalog-service (OpenSearch read projection)
+
+## Day 2 — 2026-04-27
+
+### Completed
+- Added user-service (port 8082):
+  - User profile entity, address entity, KVKK consent and soft delete flow
+  - USER_REGISTERED Kafka consumer with processed_events idempotency
+  - USER_PROFILE_UPDATED and USER_DELETED events via outbox
+- Added product-service (port 8084):
+  - Product CRUD, Turkish-aware slug generation, category seed migration
+  - Offer aggregate with seller ownership checks, duplicate offer protection, price/status events
+  - Feign client to seller-service internal by-user endpoint
+- Added cart-service (port 8088):
+  - Redis-backed cart cache with PostgreSQL persistence
+  - Item snapshot pattern for price/title/image/seller/cargo fields
+  - Cart validation detects unavailable offers and price changes
+  - Cart abandonment scheduled job publishes CART_ABANDONED
+- Updated api-gateway routes for user, product/offer/category, and cart endpoints
+- Added seller-service internal `GET /api/sellers/by-user/{userId}` endpoint
+- Added Day 2 integration test coverage for user, product/offer, and cart flows
+- Expanded Postman collection with User, Product, Offer, and Cart Day 2 requests
+
+### Verification
+- `mvn -DskipTests compile` passed for the full reactor.
+- `mvn -DskipTests test` passed for the full reactor.
+
+### Notes
+- Testcontainers tests are configured to skip cleanly when Docker is unavailable in the local sandbox.
