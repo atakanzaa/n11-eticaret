@@ -66,4 +66,14 @@ public class UserController {
     public void deleteAddress(@AuthenticationPrincipal String userId, @PathVariable UUID id) {
         addressService.delete(UUID.fromString(userId), id);
     }
+
+    @GetMapping("/internal/addresses/{id}")
+    public AddressDto getAddress(@PathVariable UUID id) {
+        return addressService.getById(id);
+    }
+
+    @GetMapping("/internal/{userId}")
+    public UserProfileDto getInternalProfile(@PathVariable UUID userId) {
+        return userProfileService.getByUserId(userId);
+    }
 }

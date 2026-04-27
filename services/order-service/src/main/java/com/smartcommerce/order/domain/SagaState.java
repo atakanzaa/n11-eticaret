@@ -1,0 +1,15 @@
+package com.smartcommerce.order.domain;
+
+public enum SagaState {
+    STARTED,
+    FRAUD_CHECK_PASSED,
+    INVENTORY_RESERVED,
+    PAYMENT_INITIATED,
+    PAYMENT_SUCCEEDED,
+    INVENTORY_CONFIRMED,
+    SHIPMENT_CREATED,
+    COMPLETED,
+    FAILED,
+    COMPENSATING_INVENTORY_RELEASE,
+    COMPENSATED
+}

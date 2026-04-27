@@ -30,6 +30,12 @@ public class AddressService {
             .toList();
     }
 
+    public AddressDto getById(UUID id) {
+        var address = addressRepository.findByIdAndDeletedAtIsNull(id)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Address not found"));
+        return addressMapper.toDto(address);
+    }
+
     @Transactional
     public AddressDto create(UUID userId, CreateAddressRequest request) {
         unsetDefaults(userId, request.defaultShipping(), request.defaultBilling());

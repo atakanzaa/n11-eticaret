@@ -52,4 +52,9 @@ public class CartController {
     public CartValidationResponse validateCart(@AuthenticationPrincipal String userId) {
         return cartService.validateCart(UUID.fromString(userId));
     }
+
+    @PostMapping("/internal/users/{userId}/validate")
+    public CartValidationResponse validateCartForUser(@PathVariable UUID userId) {
+        return cartService.validateCart(userId);
+    }
 }
