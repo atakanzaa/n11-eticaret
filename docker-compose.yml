@@ -1,0 +1,150 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartcommerce-postgres
+    environment:
+      POSTGRES_USER: smartcommerce
+      POSTGRES_PASSWORD: smartcommerce
+      POSTGRES_MULTIPLE_DATABASES: auth_db,user_db,seller_db,product_db,inventory_db,catalog_db,recommendation_db,cart_db,order_db,payment_db,shipment_db,promotion_db,notification_db,fraud_db,return_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartcommerce"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartcommerce
+
+  redis:
+    image: redis:7-alpine
+    container_name: smartcommerce-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartcommerce
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: smartcommerce-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - smartcommerce
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: smartcommerce-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - smartcommerce
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: smartcommerce-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8091:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - smartcommerce
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: smartcommerce-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: smartcommerce
+      RABBITMQ_DEFAULT_PASS: smartcommerce
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartcommerce
+
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    container_name: smartcommerce-opensearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_SECURITY_PLUGIN=true"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - smartcommerce
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: smartcommerce-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@smartcommerce.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - smartcommerce
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  opensearch_data:
+
+networks:
+  smartcommerce:
+    driver: bridge
