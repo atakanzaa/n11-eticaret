@@ -213,9 +213,12 @@ services:
       <<: *app-env
       MCP_SERVER_URL: http://mcp-server:8097
       PRODUCT_SERVICE_URL: http://product-service:8084
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-dummy-replace-in-env}
-      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+      AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+      AI_API_KEY: ${AI_API_KEY:-dummy-replace-in-env}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-4096}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-60}
       AI_DAILY_BUDGET_USD: ${AI_DAILY_BUDGET_USD:-10.00}
 
 networks:

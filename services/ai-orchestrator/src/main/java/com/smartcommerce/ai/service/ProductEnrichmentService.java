@@ -3,6 +3,7 @@ package com.smartcommerce.ai.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcommerce.ai.api.dto.EnrichmentResult;
 import com.smartcommerce.ai.client.ProductClient;
+import com.smartcommerce.ai.service.AiProvider.AiContentBlock;
 import com.smartcommerce.common.errors.BusinessException;
 import com.smartcommerce.common.errors.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +36,7 @@ public class ProductEnrichmentService {
         Never invent technical specs not provided. Stick to facts.
         """;
 
-    private final AnthropicService anthropic;
+    private final AiProvider aiProvider;
     private final ProductClient productClient;
     private final ObjectMapper objectMapper;
 
@@ -49,14 +50,15 @@ public class ProductEnrichmentService {
             "attributes", product.getOrDefault("attributes", Map.of())
         ));
 
-        var response = anthropic.chat(
-            List.of(new AnthropicService.Message("user", input)),
-            ENRICHMENT_SYSTEM_PROMPT, null, null, "PRODUCT_DESCRIPTION");
+        var response = aiProvider.chat(new AiProvider.AiRequest(
+            ENRICHMENT_SYSTEM_PROMPT,
+            List.of(AiProvider.AiMessage.userText(input)),
+            null, null, "PRODUCT_DESCRIPTION"));
 
         var jsonText = response.content().stream()
             .filter(b -> "text".equals(b.type()))
             .findFirst()
-            .map(AnthropicService.ContentBlock::text)
+            .map(AiContentBlock::text)
             .orElseThrow(() -> new BusinessException(ErrorCode.DEPENDENCY_UNAVAILABLE,
                 "AI returned no text content"));
 

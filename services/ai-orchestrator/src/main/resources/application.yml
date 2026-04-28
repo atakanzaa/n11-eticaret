@@ -28,18 +28,20 @@ services:
   product:
     url: ${PRODUCT_SERVICE_URL:http://localhost:8084}
 
-anthropic:
-  api-key: ${ANTHROPIC_API_KEY:dummy-replace-in-env}
-  base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
-  model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
-  max-tokens: 4096
-  timeout-seconds: 60
-
+# Provider-agnostic AI config.
+# AI_PROVIDER selects the active adapter (anthropic | openai | gemini).
+# AI_API_KEY is the provider's API key (sk-ant-..., sk-..., AIza...).
+# AI_MODEL is optional — adapters pick a sensible default if blank
+# (anthropic: claude-sonnet-4-6, openai: gpt-4o-mini, gemini: gemini-2.0-flash).
+# AI_BASE_URL lets you override (LLM gateway, Azure OpenAI, self-hosted proxy).
 ai:
+  provider: ${AI_PROVIDER:anthropic}
+  api-key: ${AI_API_KEY:dummy-replace-in-env}
+  model: ${AI_MODEL:}
+  base-url: ${AI_BASE_URL:}
+  max-tokens: ${AI_MAX_TOKENS:4096}
+  timeout-seconds: ${AI_TIMEOUT_SECONDS:60}
   daily-budget-usd: ${AI_DAILY_BUDGET_USD:10.00}
-  pricing:
-    input-per-million-tokens-usd: 3.0
-    output-per-million-tokens-usd: 15.0
 
 management:
   endpoints:

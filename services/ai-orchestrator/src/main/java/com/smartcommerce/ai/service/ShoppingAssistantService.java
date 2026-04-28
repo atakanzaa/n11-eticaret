@@ -8,6 +8,7 @@ import com.smartcommerce.ai.domain.AiConversation;
 import com.smartcommerce.ai.domain.AiMessage;
 import com.smartcommerce.ai.repository.AiConversationRepository;
 import com.smartcommerce.ai.repository.AiMessageRepository;
+import com.smartcommerce.ai.service.AiProvider.AiContentBlock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -40,7 +40,7 @@ public class ShoppingAssistantService {
         - Do not discuss topics unrelated to shopping.
         """;
 
-    private final AnthropicService anthropic;
+    private final AiProvider aiProvider;
     private final McpClient mcpClient;
     private final AiConversationRepository conversationRepo;
     private final AiMessageRepository messageRepo;
@@ -53,41 +53,43 @@ public class ShoppingAssistantService {
             : createConversation(userId);
 
         var history = messageRepo.findTop20ByConversationIdOrderByCreatedAtAsc(conversation.getId());
-        var messages = new ArrayList<AnthropicService.Message>();
+        var messages = new ArrayList<AiProvider.AiMessage>();
         for (var m : history) {
-            if ("USER".equals(m.getRole()) || "ASSISTANT".equals(m.getRole())) {
-                messages.add(new AnthropicService.Message(m.getRole().toLowerCase(), m.getContent()));
+            if ("USER".equals(m.getRole()) && m.getContent() != null) {
+                messages.add(AiProvider.AiMessage.userText(m.getContent()));
+            } else if ("ASSISTANT".equals(m.getRole()) && m.getContent() != null) {
+                messages.add(AiProvider.AiMessage.assistantBlocks(
+                    List.of(AiContentBlock.text(m.getContent()))));
             }
         }
-        messages.add(new AnthropicService.Message("user", userMessage));
+        messages.add(AiProvider.AiMessage.userText(userMessage));
 
         messageRepo.save(AiMessage.builder()
             .conversationId(conversation.getId()).role("USER").content(userMessage).build());
 
         var mcpTools = mcpClient.listTools();
         var toolDefs = mcpTools.stream()
-            .map(t -> new AnthropicService.ToolDefinition(t.name(), t.description(), t.inputSchema()))
+            .map(t -> new AiProvider.AiToolDefinition(t.name(), t.description(), t.inputSchema()))
             .toList();
 
-        AnthropicService.AnthropicResponse response = null;
+        AiProvider.AiResponse response = null;
         for (var iter = 0; iter < MAX_TOOL_USE_ITERATIONS; iter++) {
-            response = anthropic.chat(messages, SYSTEM_PROMPT, toolDefs, userId, "CHAT");
+            response = aiProvider.chat(new AiProvider.AiRequest(
+                SYSTEM_PROMPT, messages, toolDefs, userId, "CHAT"));
+
             var toolUses = response.content().stream()
                 .filter(b -> "tool_use".equals(b.type()))
                 .toList();
             if (toolUses.isEmpty()) break;
 
-            messages.add(new AnthropicService.Message("assistant", response.content()));
+            messages.add(AiProvider.AiMessage.assistantBlocks(response.content()));
 
-            var toolResults = new ArrayList<Map<String, Object>>();
+            var toolResults = new ArrayList<AiContentBlock>();
             for (var toolUse : toolUses) {
                 try {
                     var result = mcpClient.invokeTool(toolUse.toolName(), toolUse.input());
                     var serialized = objectMapper.writeValueAsString(result);
-                    toolResults.add(Map.of(
-                        "type", "tool_result",
-                        "tool_use_id", toolUse.toolUseId(),
-                        "content", serialized));
+                    toolResults.add(AiContentBlock.toolResult(toolUse.toolUseId(), serialized));
                     messageRepo.save(AiMessage.builder()
                         .conversationId(conversation.getId()).role("TOOL_USE")
                         .toolName(toolUse.toolName())
@@ -96,19 +98,16 @@ public class ShoppingAssistantService {
                         .build());
                 } catch (Exception e) {
                     log.error("MCP tool {} invocation failed", toolUse.toolName(), e);
-                    toolResults.add(Map.of(
-                        "type", "tool_result",
-                        "tool_use_id", toolUse.toolUseId(),
-                        "content", "Error: " + e.getMessage(),
-                        "is_error", true));
+                    toolResults.add(AiContentBlock.toolResult(toolUse.toolUseId(),
+                        "Error: " + e.getMessage()));
                 }
             }
-            messages.add(new AnthropicService.Message("user", toolResults));
+            messages.add(AiProvider.AiMessage.userToolResults(toolResults));
         }
 
         var finalText = response == null ? "" : response.content().stream()
             .filter(b -> "text".equals(b.type()))
-            .map(AnthropicService.ContentBlock::text)
+            .map(AiContentBlock::text)
             .reduce("", (a, b) -> a.isEmpty() ? b : a + "\n" + b);
 
         messageRepo.save(AiMessage.builder()
