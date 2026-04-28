@@ -200,3 +200,57 @@
 - Loki/Tempo are configured but not yet receiving data — Day 6 (dockerization) wires the actual log shipping and OTel SDK. The JSON logback already emits the right schema, so it'll Just Work once shipping is in place
 - recommendation-service uses two storage layers intentionally: Redis for hot writes (every product view increments a counter), Postgres for derived state (the 5-min job aggregates and persists scores). Talking point: "interactive write throughput vs durable analytical state — different tools for different access patterns"
 - Coupon `apply` is idempotent (checks `coupon_usages` by `(coupon_id, order_id)` unique) so the saga can safely retry without double-decrementing the per-user limit
+
+## Day 6 — 2026-04-28
+
+### Completed
+- Added fraud-detection-service (port 8095):
+  - PostgreSQL schema: `fraud_checks`, `fraud_blacklist`
+  - 5 stackable rules: HIGH_AMOUNT, VELOCITY, AMOUNT_VELOCITY, BLACKLIST, NEW_USER_HIGH_AMOUNT
+  - Decision: total score ≥70 → DECLINED, 40-69 → FLAGGED, <40 → APPROVED (capped at 100)
+  - Idempotent: `findByOrderId` returns cached decision on repeat calls
+  - Graceful UserClient lookup — fraud check still works if user-service is unreachable
+  - REST: POST `/api/fraud/check` (public, called by order-service via Feign), admin `GET /checks/{orderId}`, `GET /checks?decision=`, `POST /blacklist`, `DELETE /blacklist/{id}`, `GET /blacklist`
+  - 7 unit tests covering each rule plus the threshold boundaries
+- Replaced order-service stub `FraudDetectionClient` with real Feign client:
+  - `@CircuitBreaker(name = "fraud-detection", fallbackMethod = "checkFallback")` — fail-open returns APPROVED_ON_FALLBACK with 0 risk so checkout doesn't block on dependency outage (trade-off: better UX than blocking; ops alerted via circuit-breaker open metric)
+  - Added `firstOrder` flag to the request based on `OrderRepository.countByUserId`
+  - CheckoutOrchestratorTest now mocks the interface
+- Added return-service (port 8096) — second saga (refund saga):
+  - PostgreSQL schema: `returns`, `return_items`, `return_saga_log`, `outbox`, `processed_events`
+  - 9-state machine: REQUESTED → APPROVED → REFUND_PROCESSING → REFUNDED → INVENTORY_RESTOCKED → COMPLETED (+ REJECTED, CANCELLED, REFUND_FAILED)
+  - 7 reason codes (DEFECTIVE, NOT_AS_DESCRIBED, WRONG_ITEM, DAMAGED_IN_SHIPPING, CHANGED_MIND, SIZE_FIT, OTHER) with Turkish labels
+  - Saga steps: validate order ownership + status → compute refund from order item snapshots → APPROVE → call payment-service `/refund` → restock inventory per item → COMPLETED
+  - Failures isolated: refund failure marks REFUND_FAILED for ops; restock failure logs per-item, doesn't block
+  - REST: POST `/api/returns`, GET `/me`, GET `/{id}`, admin `POST /{id}/approve` and `/reject`, customer `POST /{id}/cancel`
+  - Outbox publishes `return.requested.v1`, `return.approved.v1`, `return.rejected.v1`, `return.refunded.v1`, `return.completed.v1`
+  - 4 unit tests (happy path, forbidden cross-user, quantity-over-ordered, full saga publishes 3 events + restocks)
+- Added inventory-service `POST /api/inventory/internal/offers/{offerId}/restock?quantity=N&reason=...`:
+  - Increments `available_quantity` directly with reason audit
+  - Publishes `OFFER_STOCK_CHANGED` with `delta` and `reason` so catalog/recommendation services pick up the change
+- Added ai-orchestrator (port 8098) — Anthropic API + MCP integration:
+  - PostgreSQL schema: `ai_conversations`, `ai_messages`, `ai_usage_log` (added `ai_db` to docker-compose Postgres init)
+  - WebClient against `https://api.anthropic.com/v1/messages`, default model `claude-sonnet-4-6`, 60s timeout, `@CircuitBreaker(name = "anthropic")`
+  - Per-call usage tracked in `ai_usage_log`: input/output tokens, cost (configurable input/output prices per million tokens), duration, success/error
+  - `AiBudgetGuard` enforces daily USD budget (default $10) before each call and exposes `todaySpend` / `remainingBudget`
+  - `ShoppingAssistantService` runs the tool-use loop (max 5 iterations, anti-runaway): fetches MCP tool defs at runtime, persists every USER/ASSISTANT/TOOL_USE message; system prompt locks model to Turkish marketplace context with anti-hallucination guardrails
+  - `ProductEnrichmentService` calls `/api/products/{id}` and asks Claude for SEO description + bullets + keywords, parses strict JSON (with code-fence stripping)
+  - REST: POST `/api/ai/chat`, GET `/conversations/me`, GET `/conversations/{id}/messages`, admin/seller `POST /products/{id}/enrich`, admin `GET /usage/today`
+  - 5 unit tests for budget guard (under/at/over-budget paths)
+- Wiring:
+  - Order-service got `fraud` URL config + Order DTO `paymentId` exposed via internal endpoint so return-service can route refunds
+  - common-security: added `/api/fraud/check`, `/api/fraud/internal/**`, `/api/inventory/internal/**`, `/api/returns/internal/**`, `/api/ai/internal/**` to public list
+  - api-gateway: routed `/api/fraud/**` → 8095, `/api/returns/**` → 8096, `/api/ai/**` → 8098
+
+### Verification
+- `mvn -DskipTests compile` — all 21 modules compile
+- `mvn -DskipITs test` — all 48 unit tests pass (32 from Days 1-5 + 16 new in Day 6: 7 fraud + 4 return + 5 AI)
+
+### Notes
+- Fraud rules use a simple `interface FraudRule` autowired as `List<FraudRule>` so adding a new rule means dropping a `@Component` into `service/`. No registry config needed.
+- Velocity-based rules (VELOCITY, AMOUNT_VELOCITY) currently get 0 from the context — order-service doesn't yet expose `count orders since` or `sum amount since` lookups. Rules are wired correctly; once those endpoints exist (Day 7), the service computes them as part of `FraudCheckContext`.
+- Return saga reuses the existing `payment-service /refund` endpoint from Day 4 — no Iyzico re-implementation. Inventory restock uses the new internal endpoint, NOT the seller-facing `adjustStock` (which has ownership checks that don't apply here).
+- ai-orchestrator default model is `claude-sonnet-4-6` (latest sonnet, cost-effective for chat). Override with `ANTHROPIC_MODEL=claude-opus-4-7` env var for product enrichment that needs more reasoning.
+- Tool-use loop has a hard 5-iteration cap to prevent runaway costs if the model keeps invoking tools. Each MCP call is `@CircuitBreaker`-protected.
+- `ProductEnrichmentService` strips ` ```json ` code fences if Claude wraps the JSON despite the system prompt — defensive parsing.
+- Day 6 deliberately skipped: full Dockerfile rollout for all 17 services, AsyncAPI specs, README rewrite, demo-flow.sh script. These are polish items for Day 7.

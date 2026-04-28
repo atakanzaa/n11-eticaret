@@ -1294,6 +1294,187 @@
           }
         }
       ]
+    },
+    {
+      "name": "Fraud Detection (Day 6)",
+      "item": [
+        {
+          "name": "Check fraud (internal)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"userId\": \"{{userId}}\",\n  \"amount\": 250.00,\n  \"currency\": \"TRY\",\n  \"itemCount\": 1,\n  \"userIp\": \"127.0.0.1\",\n  \"firstOrder\": true\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/fraud/check", "host": ["{{baseUrl}}"], "path": ["api", "fraud", "check"]}
+          }
+        },
+        {
+          "name": "Get fraud check by order (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/fraud/checks/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "fraud", "checks", "{{orderId}}"]}
+          }
+        },
+        {
+          "name": "List fraud checks (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/fraud/checks?decision=FLAGGED",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fraud", "checks"],
+              "query": [{"key": "decision", "value": "FLAGGED"}]
+            }
+          }
+        },
+        {
+          "name": "Add to blacklist (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{adminAccessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"blacklistType\": \"EMAIL\",\n  \"value\": \"fraudster@example.com\",\n  \"reason\": \"Reported chargeback\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/fraud/blacklist", "host": ["{{baseUrl}}"], "path": ["api", "fraud", "blacklist"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Returns (Day 6)",
+      "item": [
+        {
+          "name": "Request return (customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"reasonCode\": \"DEFECTIVE\",\n  \"reasonDescription\": \"Ürün arızalı geldi\",\n  \"items\": [{\n    \"offerId\": \"{{offerId}}\",\n    \"quantity\": 1\n  }]\n}"},
+            "url": {"raw": "{{baseUrl}}/api/returns", "host": ["{{baseUrl}}"], "path": ["api", "returns"]}
+          }
+        },
+        {
+          "name": "My returns",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/returns/me", "host": ["{{baseUrl}}"], "path": ["api", "returns", "me"]}
+          }
+        },
+        {
+          "name": "Get return by id",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/returns/{{returnId}}", "host": ["{{baseUrl}}"], "path": ["api", "returns", "{{returnId}}"]}
+          }
+        },
+        {
+          "name": "Approve return (admin) — runs refund saga",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/returns/{{returnId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "returns", "{{returnId}}", "approve"]}
+          }
+        },
+        {
+          "name": "Reject return (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{adminAccessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"reason\": \"Return window expired\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/returns/{{returnId}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "returns", "{{returnId}}", "reject"]}
+          }
+        },
+        {
+          "name": "Cancel my return",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/returns/{{returnId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "returns", "{{returnId}}", "cancel"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Orchestrator (Day 6)",
+      "item": [
+        {
+          "name": "Chat with shopping assistant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"conversationId\": null,\n  \"message\": \"Bana telefon önerir misin? Maks 5000 TL.\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/ai/chat", "host": ["{{baseUrl}}"], "path": ["api", "ai", "chat"]}
+          }
+        },
+        {
+          "name": "My conversations",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/ai/conversations/me", "host": ["{{baseUrl}}"], "path": ["api", "ai", "conversations", "me"]}
+          }
+        },
+        {
+          "name": "Conversation messages",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/ai/conversations/{{conversationId}}/messages", "host": ["{{baseUrl}}"], "path": ["api", "ai", "conversations", "{{conversationId}}", "messages"]}
+          }
+        },
+        {
+          "name": "Enrich product (seller/admin)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{sellerAccessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/ai/products/{{productId}}/enrich", "host": ["{{baseUrl}}"], "path": ["api", "ai", "products", "{{productId}}", "enrich"]}
+          }
+        },
+        {
+          "name": "Today AI usage (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/ai/usage/today", "host": ["{{baseUrl}}"], "path": ["api", "ai", "usage", "today"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory Restock (Day 6)",
+      "item": [
+        {
+          "name": "Restock offer (internal — used by return saga)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventory/internal/offers/{{offerId}}/restock?quantity=1&reason=RETURN_RESTOCK",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inventory", "internal", "offers", "{{offerId}}", "restock"],
+              "query": [
+                {"key": "quantity", "value": "1"},
+                {"key": "reason", "value": "RETURN_RESTOCK"}
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }
