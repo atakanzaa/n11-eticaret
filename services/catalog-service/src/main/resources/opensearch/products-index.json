@@ -1,0 +1,41 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {
+        "turkish_analyzer": {
+          "tokenizer": "standard",
+          "filter": ["lowercase", "turkish_stop", "turkish_stemmer", "asciifolding"]
+        }
+      },
+      "filter": {
+        "turkish_stop": { "type": "stop", "stopwords": "_turkish_" },
+        "turkish_stemmer": { "type": "stemmer", "language": "turkish" }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "productId": { "type": "keyword" },
+      "title": { "type": "text", "analyzer": "turkish_analyzer", "fields": { "keyword": { "type": "keyword" } } },
+      "description": { "type": "text", "analyzer": "turkish_analyzer" },
+      "categoryId": { "type": "keyword" },
+      "categoryName": { "type": "text", "analyzer": "turkish_analyzer", "fields": { "keyword": { "type": "keyword" } } },
+      "brandId": { "type": "keyword" },
+      "brandName": { "type": "keyword" },
+      "attributes": { "type": "object", "dynamic": true },
+      "minPrice": { "type": "scaled_float", "scaling_factor": 100 },
+      "maxPrice": { "type": "scaled_float", "scaling_factor": 100 },
+      "offerCount": { "type": "integer" },
+      "totalStock": { "type": "integer" },
+      "hasStock": { "type": "boolean" },
+      "averageRating": { "type": "float" },
+      "ratingCount": { "type": "integer" },
+      "primaryImageUrl": { "type": "keyword" },
+      "status": { "type": "keyword" },
+      "createdAt": { "type": "date" },
+      "updatedAt": { "type": "date" }
+    }
+  }
+}

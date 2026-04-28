@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: catalog-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: catalog-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.smartcommerce.*
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.smartcommerce.common.events.BaseEvent
+
+server:
+  port: 8086
+  shutdown: graceful
+
+services:
+  product:
+    url: ${PRODUCT_SERVICE_URL:http://localhost:8084}
+
+opensearch:
+  host: ${OPENSEARCH_HOST:localhost}
+  port: ${OPENSEARCH_PORT:9200}
+  scheme: ${OPENSEARCH_SCHEME:http}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+jwt:
+  secret: ${JWT_SECRET:local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+
+logging:
+  level:
+    com.smartcommerce: DEBUG
+    org.springframework.kafka: INFO
+  pattern:
+    console: '%d{ISO8601} %-5level [%X{correlationId:-}] %logger{36} - %msg%n'
