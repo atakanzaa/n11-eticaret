@@ -10,6 +10,7 @@ public record OrderInternalResponse(
     String status,
     BigDecimal grandTotal,
     String currency,
+    UUID paymentId,
     String shippingFullName,
     String shippingPhone,
     String shippingCity,

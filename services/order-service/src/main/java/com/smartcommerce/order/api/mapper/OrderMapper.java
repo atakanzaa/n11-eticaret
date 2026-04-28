@@ -50,7 +50,7 @@ public class OrderMapper {
             .toList();
         return new OrderInternalResponse(
             order.getId(), order.getUserId(), order.getStatus().name(),
-            order.getGrandTotal(), order.getCurrency(),
+            order.getGrandTotal(), order.getCurrency(), order.getPaymentId(),
             order.getShippingFullName(), order.getShippingPhone(),
             order.getShippingCity(), order.getShippingDistrict(),
             order.getShippingFullAddress(), order.getShippingPostalCode(),
