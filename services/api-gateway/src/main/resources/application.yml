@@ -64,6 +64,18 @@ spring:
           uri: http://localhost:8097
           predicates:
             - Path=/api/mcp/**
+        - id: fraud-detection-service
+          uri: http://localhost:8095
+          predicates:
+            - Path=/api/fraud/**
+        - id: return-service
+          uri: http://localhost:8096
+          predicates:
+            - Path=/api/returns/**
+        - id: ai-orchestrator
+          uri: http://localhost:8098
+          predicates:
+            - Path=/api/ai/**
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
       globalcors:

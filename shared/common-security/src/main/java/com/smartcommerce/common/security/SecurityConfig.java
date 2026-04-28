@@ -40,6 +40,7 @@ public class SecurityConfig {
                     "/api/sellers/*",
                     "/api/inventory/reserve",
                     "/api/inventory/orders/**",
+                    "/api/inventory/internal/**",
                     "/api/orders/internal/**",
                     "/api/payments/iyzico/**",
                     "/api/payments/internal/**",
@@ -53,6 +54,10 @@ public class SecurityConfig {
                     "/api/recommendations/products/**",
                     "/api/recommendations/internal/**",
                     "/api/mcp/**",
+                    "/api/fraud/check",
+                    "/api/fraud/internal/**",
+                    "/api/returns/internal/**",
+                    "/api/ai/internal/**",
                     "/actuator/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"

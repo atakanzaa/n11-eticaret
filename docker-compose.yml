@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: smartcommerce
       POSTGRES_PASSWORD: smartcommerce
-      POSTGRES_MULTIPLE_DATABASES: auth_db,user_db,seller_db,product_db,inventory_db,catalog_db,recommendation_db,cart_db,order_db,payment_db,shipment_db,promotion_db,notification_db,fraud_db,return_db
+      POSTGRES_MULTIPLE_DATABASES: auth_db,user_db,seller_db,product_db,inventory_db,catalog_db,recommendation_db,cart_db,order_db,payment_db,shipment_db,promotion_db,notification_db,fraud_db,return_db,ai_db
     ports:
       - "5432:5432"
     volumes:
