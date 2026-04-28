@@ -51,6 +51,8 @@ services:
     url: ${INVENTORY_SERVICE_URL:http://localhost:8085}
   promotion:
     url: ${PROMOTION_SERVICE_URL:http://localhost:8093}
+  fraud:
+    url: ${FRAUD_SERVICE_URL:http://localhost:8095}
 
 management:
   endpoints:

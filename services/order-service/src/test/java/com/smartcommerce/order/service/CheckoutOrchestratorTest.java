@@ -28,6 +28,7 @@ class CheckoutOrchestratorTest {
     @Mock CartClient cartClient;
     @Mock UserClient userClient;
     @Mock InventoryClient inventoryClient;
+    @Mock FraudDetectionClient fraudDetectionClient;
     @Mock PromotionClient promotionClient;
     @Mock OrderRepository orderRepository;
     @Mock SagaLogRepository sagaLogRepository;
@@ -39,7 +40,7 @@ class CheckoutOrchestratorTest {
 
     @BeforeEach
     void setUp() {
-        orchestrator = new CheckoutOrchestrator(cartClient, userClient, inventoryClient, new FraudDetectionClient(),
+        orchestrator = new CheckoutOrchestrator(cartClient, userClient, inventoryClient, fraudDetectionClient,
             promotionClient, orderRepository, sagaLogRepository, idempotencyKeyRepository, outboxService,
             new OrderMapper(), objectMapper, new SimpleMeterRegistry());
     }

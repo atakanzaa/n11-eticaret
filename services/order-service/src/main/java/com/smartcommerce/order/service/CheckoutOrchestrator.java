@@ -112,9 +112,10 @@ public class CheckoutOrchestrator {
             sagaLogRepository.save(successLog(order.getId(), "CREATE_ORDER", objectMapper.valueToTree(orderMapper.toEvent(order))));
             var activeOrder = order;
 
+            var firstOrder = orderRepository.countByUserId(userId) <= 1;
             var fraud = logStep(activeOrder.getId(), "FRAUD_CHECK", () -> fraudDetectionClient.check(
                 new FraudDetectionClient.FraudCheckRequest(activeOrder.getId(), userId, activeOrder.getGrandTotal(),
-                    activeOrder.getCurrency(), validation.cart().itemCount())));
+                    activeOrder.getCurrency(), validation.cart().itemCount(), null, firstOrder)));
             if (fraud.flagged()) {
                 order.setStatus(OrderStatus.CANCELLED);
                 order.setSagaState(SagaState.FAILED.name());
