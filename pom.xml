@@ -32,6 +32,8 @@
         <iyzipay.version>2.0.61</iyzipay.version>
         <logstash-logback.version>8.0</logstash-logback.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <opensearch.version>2.15.0</opensearch.version>
+        <wiremock.version>3.9.1</wiremock.version>
     </properties>
 
     <modules>
@@ -50,6 +52,12 @@
         <module>services/inventory-service</module>
         <module>services/order-service</module>
         <module>services/notification-service</module>
+        <module>services/payment-service</module>
+        <module>services/catalog-service</module>
+        <module>services/promotion-service</module>
+        <module>services/shipment-service</module>
+        <module>services/recommendation-service</module>
+        <module>services/mcp-server</module>
     </modules>
 
     <dependencyManagement>
@@ -149,6 +157,21 @@
                 <groupId>com.iyzipay</groupId>
                 <artifactId>iyzipay-java</artifactId>
                 <version>${iyzipay.version}</version>
+            </dependency>
+
+            <!-- OpenSearch (added Day 4) -->
+            <dependency>
+                <groupId>org.opensearch.client</groupId>
+                <artifactId>opensearch-java</artifactId>
+                <version>${opensearch.version}</version>
+            </dependency>
+
+            <!-- WireMock for Iyzico HTTP simulation in tests (added Day 4) -->
+            <dependency>
+                <groupId>org.wiremock</groupId>
+                <artifactId>wiremock-standalone</artifactId>
+                <version>${wiremock.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

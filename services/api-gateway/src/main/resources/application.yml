@@ -40,6 +40,30 @@ spring:
           uri: http://localhost:8094
           predicates:
             - Path=/api/notifications/**
+        - id: payment-service
+          uri: http://localhost:8090
+          predicates:
+            - Path=/api/payments/**
+        - id: catalog-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/catalog/**,/api/search/**
+        - id: promotion-service
+          uri: http://localhost:8093
+          predicates:
+            - Path=/api/promotions/**,/api/coupons/**
+        - id: shipment-service
+          uri: http://localhost:8092
+          predicates:
+            - Path=/api/shipments/**
+        - id: recommendation-service
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/recommendations/**
+        - id: mcp-server
+          uri: http://localhost:8097
+          predicates:
+            - Path=/api/mcp/**
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
       globalcors:
