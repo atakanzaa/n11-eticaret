@@ -57,4 +57,9 @@ public class CartController {
     public CartValidationResponse validateCartForUser(@PathVariable UUID userId) {
         return cartService.validateCart(userId);
     }
+
+    @GetMapping("/internal/users/{userId}")
+    public CartResponse getCartForUser(@PathVariable UUID userId) {
+        return cartService.getCart(userId);
+    }
 }
