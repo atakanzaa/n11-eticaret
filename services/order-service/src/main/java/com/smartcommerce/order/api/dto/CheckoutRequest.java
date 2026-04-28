@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record CheckoutRequest(
     @NotNull UUID addressId,
-    String paymentMethod
+    String paymentMethod,
+    String couponCode
 ) {
 }

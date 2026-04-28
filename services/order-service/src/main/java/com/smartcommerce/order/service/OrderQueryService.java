@@ -1,6 +1,7 @@
 package com.smartcommerce.order.service;
 
 import com.smartcommerce.common.errors.*;
+import com.smartcommerce.order.api.dto.OrderInternalResponse;
 import com.smartcommerce.order.api.dto.OrderResponse;
 import com.smartcommerce.order.api.mapper.OrderMapper;
 import com.smartcommerce.order.repository.OrderRepository;
@@ -22,6 +23,11 @@ public class OrderQueryService {
 
     public OrderResponse getMyOrder(UUID userId, UUID orderId) {
         return orderRepository.findByIdAndUserId(orderId, userId).map(orderMapper::toResponse)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ORDER_NOT_FOUND, "Order not found"));
+    }
+
+    public OrderInternalResponse getInternal(UUID orderId) {
+        return orderRepository.findById(orderId).map(orderMapper::toInternalResponse)
             .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ORDER_NOT_FOUND, "Order not found"));
     }
 }

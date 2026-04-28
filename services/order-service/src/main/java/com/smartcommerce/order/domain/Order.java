@@ -83,6 +83,11 @@ public class Order {
     @Column(name = "expires_at")
     private Instant expiresAt;
 
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
+    @Column(name = "coupon_discount")
+    private BigDecimal couponDiscount;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();

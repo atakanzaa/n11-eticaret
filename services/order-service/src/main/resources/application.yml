@@ -49,6 +49,8 @@ services:
     url: ${USER_SERVICE_URL:http://localhost:8082}
   inventory:
     url: ${INVENTORY_SERVICE_URL:http://localhost:8085}
+  promotion:
+    url: ${PROMOTION_SERVICE_URL:http://localhost:8093}
 
 management:
   endpoints:

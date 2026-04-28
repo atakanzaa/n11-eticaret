@@ -8,6 +8,7 @@ import com.smartcommerce.order.client.*;
 import com.smartcommerce.order.domain.IdempotencyKey;
 import com.smartcommerce.order.event.outbox.OutboxService;
 import com.smartcommerce.order.repository.*;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,6 +28,7 @@ class CheckoutOrchestratorTest {
     @Mock CartClient cartClient;
     @Mock UserClient userClient;
     @Mock InventoryClient inventoryClient;
+    @Mock PromotionClient promotionClient;
     @Mock OrderRepository orderRepository;
     @Mock SagaLogRepository sagaLogRepository;
     @Mock IdempotencyKeyRepository idempotencyKeyRepository;
@@ -38,14 +40,15 @@ class CheckoutOrchestratorTest {
     @BeforeEach
     void setUp() {
         orchestrator = new CheckoutOrchestrator(cartClient, userClient, inventoryClient, new FraudDetectionClient(),
-            orderRepository, sagaLogRepository, idempotencyKeyRepository, outboxService, new OrderMapper(), objectMapper);
+            promotionClient, orderRepository, sagaLogRepository, idempotencyKeyRepository, outboxService,
+            new OrderMapper(), objectMapper, new SimpleMeterRegistry());
     }
 
     @Test
     @DisplayName("idempotency key conflict stops checkout before external calls")
     void checkout_idempotencyConflict() {
         var userId = UUID.randomUUID();
-        var request = new CheckoutRequest(UUID.randomUUID(), "MOCK_CARD");
+        var request = new CheckoutRequest(UUID.randomUUID(), "MOCK_CARD", null);
         when(idempotencyKeyRepository.findById("idem-1")).thenReturn(Optional.of(IdempotencyKey.builder()
             .key("idem-1")
             .requestHash("different")
@@ -59,14 +62,14 @@ class CheckoutOrchestratorTest {
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("Idempotency key");
 
-        verifyNoInteractions(cartClient, userClient, inventoryClient);
+        verifyNoInteractions(cartClient, userClient, inventoryClient, promotionClient);
     }
 
     @Test
     @DisplayName("reused idempotency key returns stored checkout response")
     void checkout_idempotencyReplay() {
         var userId = UUID.randomUUID();
-        var request = new CheckoutRequest(UUID.randomUUID(), "MOCK_CARD");
+        var request = new CheckoutRequest(UUID.randomUUID(), "MOCK_CARD", null);
         var response = new CheckoutResponse(UUID.randomUUID(), "SC123", "PAYMENT_PENDING",
             new BigDecimal("120.00"), "/payments/mock/SC123", Instant.now());
         var hash = DigestUtils.md5DigestAsHex((userId + ":" + request.addressId() + ":" + request.paymentMethod())
@@ -84,6 +87,6 @@ class CheckoutOrchestratorTest {
 
         assertThat(replayed.orderNumber()).isEqualTo("SC123");
         assertThat(replayed.grandTotal()).isEqualByComparingTo("120.00");
-        verifyNoInteractions(cartClient, userClient, inventoryClient);
+        verifyNoInteractions(cartClient, userClient, inventoryClient, promotionClient);
     }
 }

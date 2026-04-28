@@ -37,4 +37,16 @@ public class OrderController {
     public OrderResponse getMyOrder(@AuthenticationPrincipal String userId, @PathVariable UUID orderId) {
         return orderQueryService.getMyOrder(UUID.fromString(userId), orderId);
     }
+
+    @GetMapping("/api/orders/internal/{orderId}")
+    public OrderInternalResponse getInternalOrder(@PathVariable UUID orderId) {
+        return orderQueryService.getInternal(orderId);
+    }
+
+    @GetMapping("/api/orders/internal/users/{userId}")
+    public Page<OrderResponse> getInternalOrdersForUser(@PathVariable UUID userId,
+                                                       @PageableDefault(size = 20, sort = "createdAt",
+                                                           direction = Sort.Direction.DESC) Pageable pageable) {
+        return orderQueryService.getMyOrders(userId, pageable);
+    }
 }

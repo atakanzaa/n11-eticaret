@@ -9,7 +9,9 @@ import com.smartcommerce.order.client.*;
 import com.smartcommerce.order.domain.*;
 import com.smartcommerce.order.event.outbox.OutboxService;
 import com.smartcommerce.order.repository.*;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,6 @@ import java.time.*;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CheckoutOrchestrator {
     private static final Duration PAYMENT_TTL = Duration.ofMinutes(15);
@@ -31,6 +32,7 @@ public class CheckoutOrchestrator {
     private final UserClient userClient;
     private final InventoryClient inventoryClient;
     private final FraudDetectionClient fraudDetectionClient;
+    private final PromotionClient promotionClient;
     private final OrderRepository orderRepository;
     private final SagaLogRepository sagaLogRepository;
     private final IdempotencyKeyRepository idempotencyKeyRepository;
@@ -38,8 +40,50 @@ public class CheckoutOrchestrator {
     private final OrderMapper orderMapper;
     private final ObjectMapper objectMapper;
 
+    private final Counter ordersCreated;
+    private final Counter sagaCompensations;
+    private final Counter ordersConfirmed;
+    private final Timer checkoutDuration;
+
+    public CheckoutOrchestrator(CartClient cartClient, UserClient userClient,
+                                InventoryClient inventoryClient, FraudDetectionClient fraudDetectionClient,
+                                PromotionClient promotionClient, OrderRepository orderRepository,
+                                SagaLogRepository sagaLogRepository,
+                                IdempotencyKeyRepository idempotencyKeyRepository,
+                                OutboxService outboxService, OrderMapper orderMapper,
+                                ObjectMapper objectMapper, MeterRegistry registry) {
+        this.cartClient = cartClient;
+        this.userClient = userClient;
+        this.inventoryClient = inventoryClient;
+        this.fraudDetectionClient = fraudDetectionClient;
+        this.promotionClient = promotionClient;
+        this.orderRepository = orderRepository;
+        this.sagaLogRepository = sagaLogRepository;
+        this.idempotencyKeyRepository = idempotencyKeyRepository;
+        this.outboxService = outboxService;
+        this.orderMapper = orderMapper;
+        this.objectMapper = objectMapper;
+        this.ordersCreated = Counter.builder("smartcommerce.orders.created")
+            .description("Total orders successfully created via checkout").register(registry);
+        this.ordersConfirmed = Counter.builder("smartcommerce.orders.confirmed")
+            .description("Total orders confirmed after successful payment").register(registry);
+        this.sagaCompensations = Counter.builder("smartcommerce.saga.compensations")
+            .description("Total saga compensations triggered").register(registry);
+        this.checkoutDuration = Timer.builder("smartcommerce.checkout.duration")
+            .description("Checkout operation duration").register(registry);
+    }
+
     @Transactional
     public CheckoutResponse checkout(UUID userId, CheckoutRequest request, String idempotencyKey) {
+        var sample = Timer.start();
+        try {
+            return doCheckout(userId, request, idempotencyKey);
+        } finally {
+            sample.stop(checkoutDuration);
+        }
+    }
+
+    private CheckoutResponse doCheckout(UUID userId, CheckoutRequest request, String idempotencyKey) {
         var requestHash = hashRequest(userId, request);
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             var existing = idempotencyKeyRepository.findById(idempotencyKey);
@@ -64,6 +108,7 @@ public class CheckoutOrchestrator {
 
             var address = logStep(null, "LOAD_ADDRESS", () -> userClient.getAddress(request.addressId()));
             order = createOrder(userId, request, validation.cart(), address, idempotencyKey);
+            applyCouponIfPresent(order, userId, request, validation.cart());
             sagaLogRepository.save(successLog(order.getId(), "CREATE_ORDER", objectMapper.valueToTree(orderMapper.toEvent(order))));
             var activeOrder = order;
 
@@ -102,6 +147,7 @@ public class CheckoutOrchestrator {
             var response = new CheckoutResponse(order.getId(), order.getOrderNumber(), order.getStatus().name(),
                 order.getGrandTotal(), "/payments/mock/" + order.getId(), order.getExpiresAt());
             saveIdempotency(idempotencyKey, requestHash, response);
+            ordersCreated.increment();
             return response;
         } catch (Exception e) {
             compensate(order, e);
@@ -125,9 +171,44 @@ public class CheckoutOrchestrator {
         order.setSagaCompletedAt(Instant.now());
         order.setConfirmedAt(Instant.now());
         orderRepository.save(order);
+        ordersConfirmed.increment();
+        recordCouponUsage(order);
         sagaLogRepository.save(successLog(orderId, "PAYMENT_CONFIRMED", objectMapper.valueToTree(Map.of("paymentId", paymentId))));
         outboxService.publish(Topics.ORDER_CONFIRMED, EventType.ORDER_CONFIRMED,
             order.getId().toString(), "ORDER", orderMapper.toEvent(order));
+    }
+
+    private void applyCouponIfPresent(Order order, UUID userId, CheckoutRequest request, CartClient.CartResponse cart) {
+        if (request.couponCode() == null || request.couponCode().isBlank()) return;
+        var firstOrder = orderRepository.countByUserId(userId) <= 1;
+        var productIds = cart.items().stream().map(CartClient.CartItem::productId).toList();
+        var sellerIds = cart.items().stream().map(CartClient.CartItem::sellerId).distinct().toList();
+        var validation = promotionClient.validate(new PromotionClient.ValidationRequest(
+            request.couponCode(), userId, order.getSubtotal(), order.getShippingTotal(),
+            productIds, java.util.List.of(), sellerIds, firstOrder));
+        if (!validation.valid()) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION,
+                validation.errorMessage() != null ? validation.errorMessage() : "Coupon validation failed");
+        }
+        order.setCouponCode(request.couponCode());
+        order.setCouponDiscount(validation.discountAmount());
+        order.setDiscountTotal(order.getDiscountTotal().add(validation.discountAmount()));
+        order.setGrandTotal(order.getSubtotal().add(order.getShippingTotal())
+            .subtract(order.getDiscountTotal()).add(order.getTaxTotal()));
+        if (order.getGrandTotal().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            order.setGrandTotal(java.math.BigDecimal.ZERO);
+        }
+        orderRepository.save(order);
+    }
+
+    private void recordCouponUsage(Order order) {
+        if (order.getCouponCode() == null || order.getCouponDiscount() == null) return;
+        try {
+            promotionClient.apply(new PromotionClient.ApplyRequest(
+                order.getCouponCode(), order.getUserId(), order.getId(), order.getCouponDiscount()));
+        } catch (Exception e) {
+            log.warn("Failed to record coupon usage for order {}: {}", order.getId(), e.getMessage());
+        }
     }
 
     @Transactional
@@ -211,6 +292,7 @@ public class CheckoutOrchestrator {
 
     private void compensate(Order order, Exception e) {
         if (order == null || order.getId() == null || order.getStatus() == OrderStatus.CANCELLED) return;
+        sagaCompensations.increment();
         cancelPaymentPendingOrder(order, e.getMessage() == null ? "CHECKOUT_FAILED" : e.getMessage(), EventType.ORDER_CANCELLED);
     }
 
