@@ -881,6 +881,419 @@
           }
         }
       ]
+    },
+    {
+      "name": "Payments (Day 4)",
+      "item": [
+        {
+          "name": "Initiate Payment (3DS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"installment\": 1,\n  \"card\": {\n    \"holderName\": \"Atakan Yel\",\n    \"number\": \"5528790000000008\",\n    \"expireMonth\": \"12\",\n    \"expireYear\": \"2030\",\n    \"cvc\": \"123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initiate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "initiate"]
+            },
+            "description": "Iyzico sandbox test cards: 5528790000000008 (Mastercard success), 5400360000000003 (Mastercard 3DS), 5406670000000009 (insufficient), 5406670000000017 (do-not-honor). Sandbox OTP: 123456."
+          }
+        },
+        {
+          "name": "Iyzico 3DS Callback (simulated)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/x-www-form-urlencoded"}
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "status", "value": "success"},
+                {"key": "paymentId", "value": "iyz-pay-id-from-initiate"},
+                {"key": "conversationId", "value": "conv-from-initiate"},
+                {"key": "mdStatus", "value": "1"}
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/iyzico/callback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "iyzico", "callback"]
+            }
+          }
+        },
+        {
+          "name": "Get Payment by Id",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "{{paymentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Payment by Order",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/by-order/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "by-order", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Refund Payment (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{adminAccessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100.00,\n  \"reason\": \"BUYER_REQUEST\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{paymentId}}/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "{{paymentId}}", "refund"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog & Search (Day 4)",
+      "item": [
+        {
+          "name": "Search products (free text)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?q=telefon",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search"],
+              "query": [{"key": "q", "value": "telefon"}]
+            }
+          }
+        },
+        {
+          "name": "Search products (filters + sort)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?categoryId={{categoryId}}&minPrice=100&maxPrice=5000&sort=price_asc&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search"],
+              "query": [
+                {"key": "categoryId", "value": "{{categoryId}}"},
+                {"key": "minPrice", "value": "100"},
+                {"key": "maxPrice", "value": "5000"},
+                {"key": "sort", "value": "price_asc"},
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get product from catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "catalog", "products", "{{productId}}"]
+            }
+          }
+        },
+        {
+          "name": "Force reindex product",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/internal/products/{{productId}}/reindex",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "catalog", "internal", "products", "{{productId}}", "reindex"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Promotions (Day 5)",
+      "item": [
+        {
+          "name": "Validate coupon",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WELCOME10\",\n  \"userId\": \"{{userId}}\",\n  \"cartTotal\": 200.00,\n  \"shippingCost\": 25.00,\n  \"productIds\": [],\n  \"categoryIds\": [],\n  \"sellerIds\": [],\n  \"firstOrder\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "coupons", "validate"]
+            }
+          }
+        },
+        {
+          "name": "List coupons (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "coupons"]
+            }
+          }
+        },
+        {
+          "name": "Create coupon (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{adminAccessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SAVE20\",\n  \"name\": \"%20 İndirim\",\n  \"description\": \"Test coupon\",\n  \"discountType\": \"PERCENTAGE\",\n  \"discountValue\": 20.00,\n  \"minimumOrderAmount\": 250.00,\n  \"perUserLimit\": 1,\n  \"validFrom\": \"2026-04-28T00:00:00Z\",\n  \"validUntil\": \"2026-05-31T23:59:59Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "coupons"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate coupon (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/coupons/{{couponId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "coupons", "{{couponId}}", "deactivate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipments (Day 5)",
+      "item": [
+        {
+          "name": "Get shipment",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "{{shipmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get shipments by order",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/by-order/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "by-order", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Track by tracking number (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/track/{{trackingNumber}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "track", "{{trackingNumber}}"]
+            }
+          }
+        },
+        {
+          "name": "Get shipment events",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "{{shipmentId}}", "events"]
+            }
+          }
+        },
+        {
+          "name": "Simulate dispatch (admin demo)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/simulate-dispatch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "{{shipmentId}}", "simulate-dispatch"]
+            }
+          }
+        },
+        {
+          "name": "Simulate delivery (admin demo)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{adminAccessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/{{shipmentId}}/simulate-delivery",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "{{shipmentId}}", "simulate-delivery"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recommendations (Day 5)",
+      "item": [
+        {
+          "name": "For me (personalized)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/recommendations/me?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recommendations", "me"],
+              "query": [{"key": "limit", "value": "10"}]
+            }
+          }
+        },
+        {
+          "name": "Popular (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recommendations/popular?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recommendations", "popular"],
+              "query": [{"key": "limit", "value": "10"}]
+            }
+          }
+        },
+        {
+          "name": "Recently viewed",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/recommendations/recently-viewed?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recommendations", "recently-viewed"],
+              "query": [{"key": "limit", "value": "10"}]
+            }
+          }
+        },
+        {
+          "name": "Related to product (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recommendations/products/{{productId}}/related?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recommendations", "products", "{{productId}}", "related"],
+              "query": [{"key": "limit", "value": "10"}]
+            }
+          }
+        },
+        {
+          "name": "Track view",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/recommendations/track/view?productId={{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "recommendations", "track", "view"],
+              "query": [{"key": "productId", "value": "{{productId}}"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "MCP Server (Day 5)",
+      "item": [
+        {
+          "name": "List MCP tools",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/mcp/tools",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mcp", "tools"]
+            }
+          }
+        },
+        {
+          "name": "Invoke search_products",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"telefon\",\n  \"limit\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mcp/tools/search_products/invoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mcp", "tools", "search_products", "invoke"]
+            }
+          }
+        },
+        {
+          "name": "Invoke get_recommendations",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"limit\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/mcp/tools/get_recommendations/invoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "mcp", "tools", "get_recommendations", "invoke"]
+            }
+          }
+        }
+      ]
     }
   ]
 }

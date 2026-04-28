@@ -91,3 +91,112 @@
 
 ### Notes
 - Notification service adds RabbitMQ AMQP dependencies, so the first Maven run may need network/cache access.
+
+## Day 4 — 2026-04-28
+
+### Completed
+- Added payment-service (port 8090) — real Iyzico SDK integration:
+  - PostgreSQL schema: `payments`, `payment_attempts`, `refunds`, `webhook_events`, `outbox`, `processed_events`
+  - Payment state machine: INITIATED → THREEDS_PENDING → THREEDS_AUTHENTICATED → CAPTURING → SUCCEEDED (+ FAILED, REFUNDED, PARTIALLY_REFUNDED)
+  - `PaymentProvider` interface decouples service from `iyzipay-java` 2.0.61 SDK; only `IyzicoPaymentAdapter` imports SDK classes
+  - 3DS flow: `ThreedsInitialize.create` → `/api/payments/iyzico/callback` → `ThreedsPayment.create` capture
+  - `payment_attempts` persists every Iyzico exchange (request + response JSONB) with PAN/CVC redaction
+  - `webhook_events` persists every callback for audit + idempotency before processing
+  - `PaymentReconciliationJob` runs hourly (cron `0 30 * * * *`) to detect status drift and replay missed callbacks
+  - Outbox publishes `payment.initiated.v1`, `payment.succeeded.v1`, `payment.failed.v1`, `payment.refunded.v1`
+  - REST: POST `/api/payments/initiate`, GET `/api/payments/{id}`, GET `/api/payments/by-order/{orderId}`, POST `/api/payments/{id}/refund` (admin/support)
+  - Refunds support partial amount with a remaining-balance check
+- Added catalog-service (port 8086) — OpenSearch CQRS read projection:
+  - OpenSearch Java client 2.15.0 with httpcore5/httpclient5 transport
+  - Auto-creates `products` index on startup with Turkish analyzer (`standard` tokenizer + `turkish_stop` + `turkish_stemmer` + `asciifolding`) and `scaled_float` price fields
+  - `CatalogProjectionConsumer` listens to PRODUCT_* and OFFER_* topics → re-fetches via Feign → upserts the full `ProductDocument`
+  - `SearchService` builds bool queries with multi-match (title^3, description, categoryName, brandName), term filters, range filter, sort (price/rating/newest), and `by_category`/`by_brand` term aggregations
+  - REST: GET `/api/search`, GET `/api/catalog/products/{id}`, POST `/api/catalog/internal/products/{id}/reindex`
+- Added internal `GET /api/orders/internal/{orderId}` on order-service so payment-service can fetch order detail (incl. shipping address + items) without JWT
+- common-security: opened `/api/orders/internal/**`, `/api/payments/iyzico/**`, `/api/payments/internal/**`, `/api/search/**`, `/api/catalog/**` for the Day 4 internal/public flows
+- api-gateway: routed `/api/payments/**` → 8090, `/api/catalog/**` and `/api/search/**` → 8086
+- Parent POM: added `iyzipay-java`, `opensearch-java`, `wiremock-standalone` to dependencyManagement and registered new modules
+- Postman collection: added "Payments (Day 4)" group (initiate/callback/get/refund) and "Catalog & Search (Day 4)" group (search free-text, search filters+sort, get from catalog, force reindex)
+- ADRs: added ADR-006 (CQRS via catalog-service) and ADR-009 (Iyzico integration)
+
+### Verification
+- `mvn -DskipTests compile` passes for the full 17-module reactor
+- `mvn -DskipITs test` passes — payment-service: 6 unit tests, catalog-service: 2 unit tests, no regressions in days 1-3
+- Tests cover: initiate happy path, initiate failure → PAYMENT_FAILED, 3DS callback success → SUCCEEDED + event, idempotency on duplicate callback, full refund → REFUNDED + event, refund rejected over remaining balance, projection min/max price computation, projection deletes when no offers remain
+
+### Notes
+- Iyzico SDK 2.0.61 actually exposes `BigDecimal` (not String) for `setPrice`/`setPaidPrice` and `RefundReason` is an enum, not a String — initial code from the day-4 prompt assumed the older string-based API and had to be corrected against the decompiled jar
+- `ThreedsInitialize` does NOT return `paymentId` — that comes from the user-browser callback. The adapter records only `htmlContent`; service stores `providerPaymentId` from the callback
+- Catalog-service intentionally does NOT depend on spring-boot-starter-data-jpa to keep it stateless. State lives in OpenSearch only
+- Reconciliation job swallows per-payment failures so one bad record can't poison the batch
+- `IyzicoPaymentAdapter` redacts card PAN/CVC before persisting `request_payload` to `payment_attempts`
+
+## Day 5 — 2026-04-28
+
+### Completed
+- Added promotion-service (port 8093) — coupon engine:
+  - PostgreSQL schema: `coupons`, `coupon_usages`, plus standard `outbox` + `processed_events`
+  - Three discount types (PERCENTAGE, FIXED_AMOUNT, FREE_SHIPPING) with min cart, total/per-user limits, validity window, first-order-only, stackable flags
+  - Seed data: WELCOME10 (%10), FREESHIP, BIGSAVE100
+  - REST: `POST /api/coupons/validate`, `POST /api/coupons/internal/apply` (idempotent), admin `GET /api/coupons`, `POST /api/coupons`, `PATCH /api/coupons/{id}/deactivate`
+  - 5 unit tests covering happy path, min-amount, per-user limit, expiry, apply idempotency
+- Added shipment-service (port 8092) — multi-cargo abstraction:
+  - PostgreSQL schema: `shipments`, `shipment_events`, plus standard `outbox` + `processed_events`
+  - 9-state shipment machine: CREATED → READY_FOR_PICKUP → DISPATCHED → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED (+ FAILED_DELIVERY, RETURNED_TO_SENDER, CANCELLED)
+  - `CargoProvider` interface with three mock adapters (YURTICI, ARAS, MNG) — Spring autowires by qualifier name into `Map<String, CargoProvider>`
+  - `OrderConfirmedConsumer` listens to `order.confirmed.v1`, splits order items by seller, creates one shipment per seller (real marketplace pattern)
+  - REST: `GET /api/shipments/{id}`, `/by-order/{orderId}`, `/track/{trackingNumber}` (public), `/{id}/events`, `POST /{id}/simulate-dispatch` and `/simulate-delivery` (admin demo)
+  - Outbox publishes `shipment.created.v1`, `shipment.dispatched.v1`, `shipment.delivered.v1`
+  - 5 unit tests covering multi-seller split, idempotent re-creation, dispatch/delivery state transitions
+- Added recommendation-service (port 8087) — behavior tracking + popularity + co-purchase:
+  - PostgreSQL schema: `user_behaviors`, `product_popularity`, `co_purchase_pairs`, `processed_events`
+  - Redis-backed (DB 7): hot per-user recently-viewed sorted set + product counters (views/cart-adds/purchases)
+  - `BehaviorTrackingService` writes to both Postgres (cold log) and Redis (hot counters)
+  - `BehaviorEventConsumer` listens to `cart.item-added.v1` and `order.confirmed.v1` (now enriched with full items list)
+  - `PopularityScoreJob` runs every 5 minutes: drains Redis counters → upserts `product_popularity` with score = purchases×10 + cartAdds×3 + views×1
+  - Co-purchase: stores both directions (A→B and B→A) for simpler queries
+  - `RecommendationService.getForUser` falls back to `getPopular` when user has no behavior history
+  - REST: `/me`, `/popular`, `/recently-viewed`, `/products/{id}/related`, `/track/view`
+  - 3 unit tests covering popular sort, co-purchase reason tagging, empty-history fallback
+- Added mcp-server (port 8097) — MCP-style tool registry over HTTP:
+  - 5 tools: `search_products`, `get_product_details`, `get_recommendations`, `get_user_order_history`, `get_user_cart`
+  - `GET /api/mcp/tools` returns full JSON-Schema input contracts
+  - `POST /api/mcp/tools/{name}/invoke` validates tool name, executes via Feign clients to catalog/product/recommendation/order/cart services, wraps result in `{success, data, error}`
+  - Stateless: no DB/Kafka — `DataSourceAutoConfiguration` and `HibernateJpaAutoConfiguration` excluded so the service starts without Postgres
+  - 3 unit tests covering tool listing, lookup, unknown-tool handling
+- Wired promotion into order-service:
+  - `CheckoutRequest` gained `couponCode` field
+  - `Order` entity + V2 migration added `coupon_code` and `coupon_discount` columns
+  - `CheckoutOrchestrator.applyCouponIfPresent` calls `PromotionClient.validate` after order creation, recomputes `grandTotal` (subtotal + shipping − discount + tax) with floor at zero
+  - `confirmPayment` now calls `promotionClient.apply` to mark coupon used (failures logged but not throwing — saga must not roll back)
+  - `OrderMapper.toEvent` now includes order items so recommendation-service can co-purchase from `order.confirmed.v1` events
+  - `OrderInternalResponse.OrderInternalItem` added `sellerId` so shipment-service can group by seller
+  - New endpoints: `GET /api/orders/internal/users/{userId}` (paged) for mcp-server `get_user_order_history`
+- Added internal `GET /api/cart/internal/users/{userId}` to cart-service for mcp-server's `get_user_cart` tool
+- common-security: opened `/api/coupons/validate`, `/api/coupons/internal/**`, `/api/shipments/track/**`, `/api/shipments/internal/**`, `/api/recommendations/popular`, `/api/recommendations/products/**`, `/api/recommendations/internal/**`, `/api/mcp/**`
+- Observability stack (`docker-compose.observability.yml`): Prometheus (:9090), Grafana (:3000), Loki (:3100), Tempo (:3200) with OTLP receivers (:4317/:4318)
+  - Prometheus scrapes `/actuator/prometheus` on all 17 service ports via `host.docker.internal`
+  - Grafana auto-provisions Prometheus + Loki + Tempo datasources
+  - Two pre-built dashboards: `smartcommerce-overview` (service up, request rate, p95 latency, 5xx, JVM heap, DB pool) and `smartcommerce-business` (orders created, saga compensations, checkout duration p95, payment success/failure)
+- Custom business metrics:
+  - order-service: `smartcommerce.orders.created`, `smartcommerce.orders.confirmed`, `smartcommerce.saga.compensations`, `smartcommerce.checkout.duration` (Timer)
+  - payment-service: `smartcommerce.payment.success`, `smartcommerce.payment.failure`, `smartcommerce.payment.refund`
+  - Both services kept a no-MeterRegistry fallback constructor so existing unit tests still compile
+- JSON structured logging in `shared/common-web/src/main/resources/logback-spring.xml` — picked up by every service via classpath; emits `service`, `level`, `message`, `correlationId`, `traceId`, `spanId`, `stackTrace`
+- api-gateway routes added for `/api/promotions/**`, `/api/coupons/**` → 8093; `/api/shipments/**` → 8092; `/api/recommendations/**` → 8087; `/api/mcp/**` → 8097
+- Postman collection: 4 new groups (Promotions, Shipments, Recommendations, MCP Server) with 18 new requests
+- ADR-011 (MCP server) and ADR-012 (Observability stack)
+
+### Verification
+- `mvn -DskipTests compile` — all 18 modules compile
+- `mvn -DskipITs test` — all 32 unit tests pass (16 from Days 1-4 + 16 new in Day 5), no regressions
+- New tests: 5 promotion + 5 shipment + 3 recommendation + 3 mcp = 16 unit tests
+
+### Notes
+- Day 5 services follow the standard scaffold (entity + repo + service + REST + outbox + processed_events). The Day 5 prompt's "skip the boilerplate explanation" was honored — only the unique business logic gets prose
+- ORDER_CONFIRMED event payload was widened to include `items[]` so recommendation-service can compute co-purchase pairs without an extra Feign call back to order-service
+- mcp-server intentionally excludes JPA auto-config — it runs without a database, demonstrating that not every service needs Postgres
+- The CheckoutOrchestrator constructor is now hand-written (not @RequiredArgsConstructor) because we needed to inject MeterRegistry alongside the existing dependencies. Same pattern in PaymentService with a fallback constructor for tests
+- Loki/Tempo are configured but not yet receiving data — Day 6 (dockerization) wires the actual log shipping and OTel SDK. The JSON logback already emits the right schema, so it'll Just Work once shipping is in place
+- recommendation-service uses two storage layers intentionally: Redis for hot writes (every product view increments a counter), Postgres for derived state (the 5-min job aggregates and persists scores). Talking point: "interactive write throughput vs durable analytical state — different tools for different access patterns"
+- Coupon `apply` is idempotent (checks `coupon_usages` by `(coupon_id, order_id)` unique) so the saga can safely retry without double-decrementing the per-user limit
