@@ -1,0 +1,224 @@
+version: '3.9'
+
+# All 18 SmartCommerce application services. Connects to the infra
+# network created by docker-compose.yml (postgres, redis, kafka, rabbitmq, opensearch).
+# Run `make build-services` first to package JARs, then `make up-services`.
+
+x-app-base: &app-base
+  restart: unless-stopped
+  networks:
+    - smartcommerce
+  environment: &app-env
+    SPRING_PROFILES_ACTIVE: docker
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_USER: smartcommerce
+    DB_PASSWORD: smartcommerce
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    KAFKA_BOOTSTRAP: kafka:29092
+    JWT_SECRET: ${JWT_SECRET:-local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+
+services:
+  # ---------- Edge ----------
+  api-gateway:
+    <<: *app-base
+    build: ./services/api-gateway
+    container_name: smartcommerce-api-gateway
+    ports: ["8080:8080"]
+    environment:
+      <<: *app-env
+      AUTH_SERVICE_URL: http://auth-service:8081
+      USER_SERVICE_URL: http://user-service:8082
+      SELLER_SERVICE_URL: http://seller-service:8083
+      PRODUCT_SERVICE_URL: http://product-service:8084
+      INVENTORY_SERVICE_URL: http://inventory-service:8085
+      CATALOG_SERVICE_URL: http://catalog-service:8086
+      RECOMMENDATION_SERVICE_URL: http://recommendation-service:8087
+      CART_SERVICE_URL: http://cart-service:8088
+      ORDER_SERVICE_URL: http://order-service:8089
+      PAYMENT_SERVICE_URL: http://payment-service:8090
+      SHIPMENT_SERVICE_URL: http://shipment-service:8092
+      PROMOTION_SERVICE_URL: http://promotion-service:8093
+      NOTIFICATION_SERVICE_URL: http://notification-service:8094
+      FRAUD_SERVICE_URL: http://fraud-detection-service:8095
+      RETURN_SERVICE_URL: http://return-service:8096
+      MCP_SERVER_URL: http://mcp-server:8097
+      AI_ORCHESTRATOR_URL: http://ai-orchestrator:8098
+
+  # ---------- Identity ----------
+  auth-service:
+    <<: *app-base
+    build: ./services/auth-service
+    container_name: smartcommerce-auth-service
+    ports: ["8081:8081"]
+
+  user-service:
+    <<: *app-base
+    build: ./services/user-service
+    container_name: smartcommerce-user-service
+    ports: ["8082:8082"]
+
+  seller-service:
+    <<: *app-base
+    build: ./services/seller-service
+    container_name: smartcommerce-seller-service
+    ports: ["8083:8083"]
+    environment:
+      <<: *app-env
+      USER_SERVICE_URL: http://user-service:8082
+
+  # ---------- Catalog & Inventory ----------
+  product-service:
+    <<: *app-base
+    build: ./services/product-service
+    container_name: smartcommerce-product-service
+    ports: ["8084:8084"]
+    environment:
+      <<: *app-env
+      SELLER_SERVICE_URL: http://seller-service:8083
+
+  inventory-service:
+    <<: *app-base
+    build: ./services/inventory-service
+    container_name: smartcommerce-inventory-service
+    ports: ["8085:8085"]
+    environment:
+      <<: *app-env
+      SELLER_SERVICE_URL: http://seller-service:8083
+
+  catalog-service:
+    <<: *app-base
+    build: ./services/catalog-service
+    container_name: smartcommerce-catalog-service
+    ports: ["8086:8086"]
+    environment:
+      <<: *app-env
+      OPENSEARCH_HOST: opensearch
+      OPENSEARCH_PORT: 9200
+      OPENSEARCH_SCHEME: http
+      PRODUCT_SERVICE_URL: http://product-service:8084
+
+  recommendation-service:
+    <<: *app-base
+    build: ./services/recommendation-service
+    container_name: smartcommerce-recommendation-service
+    ports: ["8087:8087"]
+
+  # ---------- Commerce ----------
+  cart-service:
+    <<: *app-base
+    build: ./services/cart-service
+    container_name: smartcommerce-cart-service
+    ports: ["8088:8088"]
+    environment:
+      <<: *app-env
+      PRODUCT_SERVICE_URL: http://product-service:8084
+
+  order-service:
+    <<: *app-base
+    build: ./services/order-service
+    container_name: smartcommerce-order-service
+    ports: ["8089:8089"]
+    environment:
+      <<: *app-env
+      CART_SERVICE_URL: http://cart-service:8088
+      USER_SERVICE_URL: http://user-service:8082
+      INVENTORY_SERVICE_URL: http://inventory-service:8085
+      PROMOTION_SERVICE_URL: http://promotion-service:8093
+      FRAUD_SERVICE_URL: http://fraud-detection-service:8095
+
+  payment-service:
+    <<: *app-base
+    build: ./services/payment-service
+    container_name: smartcommerce-payment-service
+    ports: ["8090:8090"]
+    environment:
+      <<: *app-env
+      ORDER_SERVICE_URL: http://order-service:8089
+      USER_SERVICE_URL: http://user-service:8082
+      IYZICO_API_KEY: ${IYZICO_API_KEY:-sandbox-api-key}
+      IYZICO_SECRET_KEY: ${IYZICO_SECRET_KEY:-sandbox-secret-key}
+      IYZICO_BASE_URL: ${IYZICO_BASE_URL:-https://sandbox-api.iyzipay.com}
+      IYZICO_CALLBACK_URL: ${IYZICO_CALLBACK_URL:-http://localhost:8090/api/payments/iyzico/callback}
+
+  shipment-service:
+    <<: *app-base
+    build: ./services/shipment-service
+    container_name: smartcommerce-shipment-service
+    ports: ["8092:8092"]
+    environment:
+      <<: *app-env
+      ORDER_SERVICE_URL: http://order-service:8089
+
+  promotion-service:
+    <<: *app-base
+    build: ./services/promotion-service
+    container_name: smartcommerce-promotion-service
+    ports: ["8093:8093"]
+
+  # ---------- Supporting ----------
+  notification-service:
+    <<: *app-base
+    build: ./services/notification-service
+    container_name: smartcommerce-notification-service
+    ports: ["8094:8094"]
+    environment:
+      <<: *app-env
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: smartcommerce
+      RABBITMQ_PASSWORD: smartcommerce
+
+  fraud-detection-service:
+    <<: *app-base
+    build: ./services/fraud-detection-service
+    container_name: smartcommerce-fraud-detection-service
+    ports: ["8095:8095"]
+    environment:
+      <<: *app-env
+      ORDER_SERVICE_URL: http://order-service:8089
+      USER_SERVICE_URL: http://user-service:8082
+
+  return-service:
+    <<: *app-base
+    build: ./services/return-service
+    container_name: smartcommerce-return-service
+    ports: ["8096:8096"]
+    environment:
+      <<: *app-env
+      ORDER_SERVICE_URL: http://order-service:8089
+      PAYMENT_SERVICE_URL: http://payment-service:8090
+      INVENTORY_SERVICE_URL: http://inventory-service:8085
+
+  mcp-server:
+    <<: *app-base
+    build: ./services/mcp-server
+    container_name: smartcommerce-mcp-server
+    ports: ["8097:8097"]
+    environment:
+      <<: *app-env
+      CATALOG_SERVICE_URL: http://catalog-service:8086
+      PRODUCT_SERVICE_URL: http://product-service:8084
+      RECOMMENDATION_SERVICE_URL: http://recommendation-service:8087
+      ORDER_SERVICE_URL: http://order-service:8089
+      CART_SERVICE_URL: http://cart-service:8088
+
+  ai-orchestrator:
+    <<: *app-base
+    build: ./services/ai-orchestrator
+    container_name: smartcommerce-ai-orchestrator
+    ports: ["8098:8098"]
+    environment:
+      <<: *app-env
+      MCP_SERVER_URL: http://mcp-server:8097
+      PRODUCT_SERVICE_URL: http://product-service:8084
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-dummy-replace-in-env}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+      AI_DAILY_BUDGET_USD: ${AI_DAILY_BUDGET_USD:-10.00}
+
+networks:
+  smartcommerce:
+    name: n11-eticaret_smartcommerce
+    external: true
