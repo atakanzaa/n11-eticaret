@@ -127,6 +127,23 @@ public class InventoryService {
     }
 
     @Transactional
+    public InventoryItemResponse restock(UUID offerId, int quantity, String reason) {
+        var item = inventoryItemRepository.findByOfferId(offerId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Inventory item not found"));
+        if (quantity <= 0) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "Restock quantity must be positive");
+        }
+        var oldQty = item.getAvailableQuantity();
+        item.setAvailableQuantity(oldQty + quantity);
+        item = inventoryItemRepository.save(item);
+        outboxService.publish(Topics.OFFER_STOCK_CHANGED, EventType.OFFER_STOCK_CHANGED,
+            offerId.toString(), "OFFER",
+            Map.of("offerId", offerId, "oldQuantity", oldQty, "newQuantity", item.getAvailableQuantity(),
+                "delta", quantity, "reason", reason));
+        return mapper.toResponse(item);
+    }
+
+    @Transactional
     public InventoryItemResponse createOrGet(UUID offerId, UUID productId, UUID sellerId) {
         return inventoryItemRepository.findByOfferId(offerId)
             .map(mapper::toResponse)

@@ -49,4 +49,11 @@ public class InventoryController {
         var sellerId = sellerClient.getSellerIdByUserId(UUID.fromString(userId));
         return inventoryService.adjustStock(sellerId, offerId, request);
     }
+
+    @PostMapping("/internal/offers/{offerId}/restock")
+    public InventoryItemResponse restock(@PathVariable UUID offerId,
+                                         @RequestParam int quantity,
+                                         @RequestParam(defaultValue = "RETURN_RESTOCK") String reason) {
+        return inventoryService.restock(offerId, quantity, reason);
+    }
 }
