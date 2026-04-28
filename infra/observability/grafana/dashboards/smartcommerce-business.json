@@ -1,0 +1,70 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Orders created (total)",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "sum(smartcommerce_orders_created_total)", "refId": "A"}
+      ],
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "colorMode": "value"}
+    },
+    {
+      "type": "stat",
+      "title": "Saga compensations",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+      "targets": [
+        {"expr": "sum(smartcommerce_saga_compensations_total)", "refId": "A"}
+      ],
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "colorMode": "value"}
+    },
+    {
+      "type": "timeseries",
+      "title": "Orders per minute",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {"expr": "rate(smartcommerce_orders_created_total[1m]) * 60", "refId": "A", "legendFormat": "orders/min"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Checkout duration p95",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum(rate(smartcommerce_checkout_duration_seconds_bucket[5m])) by (le))", "refId": "A", "legendFormat": "p95"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Payment success vs failure rate",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {"expr": "rate(smartcommerce_payment_success_total[5m])", "refId": "A", "legendFormat": "success/sec"},
+        {"expr": "rate(smartcommerce_payment_failure_total[5m])", "refId": "B", "legendFormat": "failure/sec"}
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["smartcommerce", "business"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "SmartCommerce — Business Metrics",
+  "uid": "smartcommerce-business",
+  "version": 1,
+  "weekStart": ""
+}

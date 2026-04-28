@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'smartcommerce-services'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+        - 'host.docker.internal:8080'  # api-gateway
+        - 'host.docker.internal:8081'  # auth
+        - 'host.docker.internal:8082'  # user
+        - 'host.docker.internal:8083'  # seller
+        - 'host.docker.internal:8084'  # product
+        - 'host.docker.internal:8085'  # inventory
+        - 'host.docker.internal:8086'  # catalog
+        - 'host.docker.internal:8087'  # recommendation
+        - 'host.docker.internal:8088'  # cart
+        - 'host.docker.internal:8089'  # order
+        - 'host.docker.internal:8090'  # payment
+        - 'host.docker.internal:8092'  # shipment
+        - 'host.docker.internal:8093'  # promotion
+        - 'host.docker.internal:8094'  # notification
+        - 'host.docker.internal:8095'  # fraud (Day 6)
+        - 'host.docker.internal:8096'  # return (Day 6)
+        - 'host.docker.internal:8097'  # mcp
+        - 'host.docker.internal:8098'  # ai-orchestrator (Day 6)
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: 'host.docker.internal:(\d+)'
+        target_label: service_port
+        replacement: '${1}'
