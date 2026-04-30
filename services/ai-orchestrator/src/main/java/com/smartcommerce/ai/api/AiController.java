@@ -1,11 +1,13 @@
 package com.smartcommerce.ai.api;
 
+import com.smartcommerce.ai.api.dto.AiUsageBreakdownResponse;
 import com.smartcommerce.ai.api.dto.ChatRequest;
 import com.smartcommerce.ai.api.dto.ChatResponse;
 import com.smartcommerce.ai.api.dto.EnrichmentResult;
 import com.smartcommerce.ai.domain.AiConversation;
 import com.smartcommerce.ai.domain.AiMessage;
 import com.smartcommerce.ai.service.AiBudgetGuard;
+import com.smartcommerce.ai.service.AiUsageQueryService;
 import com.smartcommerce.ai.service.ProductEnrichmentService;
 import com.smartcommerce.ai.service.ShoppingAssistantService;
 import jakarta.validation.Valid;
@@ -27,6 +29,7 @@ public class AiController {
     private final ShoppingAssistantService assistantService;
     private final ProductEnrichmentService enrichmentService;
     private final AiBudgetGuard budgetGuard;
+    private final AiUsageQueryService usageQueryService;
 
     @PostMapping("/chat")
     public ChatResponse chat(@AuthenticationPrincipal String userId,
@@ -57,5 +60,11 @@ public class AiController {
             "spent", budgetGuard.todaySpend(),
             "remaining", budgetGuard.remainingBudget()
         );
+    }
+
+    @GetMapping("/usage/breakdown")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AiUsageBreakdownResponse usageBreakdown(@RequestParam(defaultValue = "7") int days) {
+        return usageQueryService.breakdown(days);
     }
 }

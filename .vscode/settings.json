@@ -1,0 +1,41 @@
+{
+  // ─── Stop VS Code's Java extension from writing .class files into Maven's target/ ───
+  // The Red Hat Java extension (JDT-LS) auto-builds on save by default and inherits
+  // Maven's output path. With MapStruct annotation processors not perfectly mirrored
+  // in the IDE classpath, this can produce "Unresolved compilation problems"
+  // bytecode that the docker build then bakes into JARs and crashes services at
+  // startup. Disabling autobuild keeps IntelliSense / navigation / Find References
+  // working (those use JDT's in-memory compiler) while leaving target/ untouched —
+  // only `mvn clean package` writes there.
+  "java.autobuild.enabled": false,
+
+  // Don't auto-sync pom changes; you trigger it explicitly via the command palette
+  // (Java: Reload Projects). Prevents IDE from re-running its broken build path.
+  "java.configuration.updateBuildConfiguration": "interactive",
+
+  // Skip null-analysis (saves CPU + avoids spurious errors in MapStruct-generated code).
+  "java.compile.nullAnalysis.mode": "disabled",
+
+  // Hide build output directories from the file explorer.
+  "files.exclude": {
+    "**/target": true,
+    "**/.classpath": true,
+    "**/.project": true,
+    "**/.settings": true,
+    "**/.factorypath": true
+  },
+
+  // Don't index target/ when searching.
+  "search.exclude": {
+    "**/target": true,
+    "**/*.jar": true
+  },
+
+  // Test runner: run Maven for tests, not VS Code's internal runner.
+  "java.test.config": [
+    {
+      "name": "default"
+    }
+  ],
+  "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable"
+}

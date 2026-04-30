@@ -55,6 +55,12 @@ iyzico:
   callback-url: ${IYZICO_CALLBACK_URL:http://localhost:8090/api/payments/iyzico/callback}
   timeout-seconds: 30
 
+# Where to send the user once Iyzico's 3DS challenge POSTs back to us. The
+# Angular app handles the result page (polls payment status, shows success/failure).
+app:
+  frontend:
+    callback-base-url: ${FRONTEND_URL:http://localhost:4200}
+
 management:
   endpoints:
     web:

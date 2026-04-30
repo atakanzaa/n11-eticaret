@@ -17,6 +17,7 @@ import com.smartcommerce.payment.event.outbox.OutboxService;
 import com.smartcommerce.payment.repository.PaymentAttemptRepository;
 import com.smartcommerce.payment.repository.PaymentRepository;
 import com.smartcommerce.payment.repository.RefundRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,8 @@ class PaymentServiceTest {
     @BeforeEach
     void setUp() {
         paymentService = new PaymentService(paymentRepository, paymentAttemptRepository, refundRepository,
-            paymentProvider, orderClient, userClient, outboxService, new ObjectMapper(), new PaymentMapper());
+            paymentProvider, orderClient, userClient, outboxService, new ObjectMapper(), new PaymentMapper(),
+            new SimpleMeterRegistry());
     }
 
     @Test

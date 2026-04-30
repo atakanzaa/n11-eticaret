@@ -1,0 +1,221 @@
+/* ==========================================================================
+   SmartCommerce — global styles & design tokens
+   ========================================================================== */
+
+:root {
+  /* Brand */
+  --sc-primary: #ee5e3a;
+  --sc-primary-600: #d94a27;
+  --sc-primary-50: #fff2ed;
+
+  /* Semantic */
+  --sc-success: #16a34a;
+  --sc-success-50: #ecfdf5;
+  --sc-danger: #dc2626;
+  --sc-danger-50: #fef2f2;
+  --sc-warn: #f59e0b;
+  --sc-warn-50: #fffbeb;
+  --sc-info: #2563eb;
+  --sc-info-50: #eff6ff;
+
+  /* Neutrals — warm gray */
+  --sc-bg: #fbf9f6;
+  --sc-surface: #ffffff;
+  --sc-surface-2: #f6f3ee;
+  --sc-border: #ece7df;
+  --sc-border-strong: #d9d2c6;
+  --sc-text: #1a1714;
+  --sc-text-muted: #6b6358;
+  --sc-text-faint: #9b9286;
+
+  /* Type */
+  --sc-font: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --sc-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Radius */
+  --sc-radius-sm: 8px;
+  --sc-radius: 12px;
+  --sc-radius-lg: 16px;
+  --sc-radius-xl: 20px;
+  --sc-radius-2xl: 24px;
+
+  /* Shadow */
+  --sc-shadow-sm: 0 1px 2px rgba(20, 16, 10, 0.04);
+  --sc-shadow: 0 1px 3px rgba(20, 16, 10, 0.06), 0 4px 12px rgba(20, 16, 10, 0.04);
+  --sc-shadow-lg: 0 8px 24px rgba(20, 16, 10, 0.08), 0 2px 6px rgba(20, 16, 10, 0.04);
+
+  /* Layout */
+  --sc-container: 1280px;
+  --sc-header-h: 128px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--sc-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sc-text);
+  background: var(--sc-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--sc-primary); }
+
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* ---------- utility classes ---------- */
+.sc-container {
+  max-width: var(--sc-container);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.sc-card {
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg);
+  box-shadow: var(--sc-shadow-sm);
+}
+
+/* Buttons */
+.sc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 120ms ease;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--sc-text);
+}
+.sc-btn-primary {
+  background: var(--sc-primary);
+  color: #fff;
+}
+.sc-btn-primary:hover { background: var(--sc-primary-600); }
+.sc-btn-ghost {
+  background: var(--sc-surface);
+  border-color: var(--sc-border);
+}
+.sc-btn-ghost:hover { background: var(--sc-surface-2); }
+.sc-btn-dark {
+  background: var(--sc-text);
+  color: var(--sc-surface);
+}
+.sc-btn-dark:hover { background: #000; }
+.sc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sc-btn-sm { padding: 6px 12px; font-size: 13px; }
+.sc-btn-lg { padding: 14px 24px; font-size: 15px; }
+.sc-btn-block { width: 100%; }
+
+/* Pills / badges */
+.sc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--sc-surface-2);
+  color: var(--sc-text-muted);
+  border: 1px solid var(--sc-border);
+}
+.sc-pill-success { background: var(--sc-success-50); color: var(--sc-success); border-color: transparent; }
+.sc-pill-warn { background: var(--sc-warn-50); color: #b45309; border-color: transparent; }
+.sc-pill-danger { background: var(--sc-danger-50); color: var(--sc-danger); border-color: transparent; }
+.sc-pill-info { background: var(--sc-info-50); color: var(--sc-info); border-color: transparent; }
+.sc-pill-primary { background: var(--sc-primary-50); color: var(--sc-primary-600); border-color: transparent; }
+
+/* Inputs */
+.sc-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--sc-radius);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 120ms;
+}
+.sc-input:focus { border-color: var(--sc-primary); box-shadow: 0 0 0 3px var(--sc-primary-50); }
+
+.sc-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sc-text-muted);
+  margin-bottom: 6px;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 28px; letter-spacing: -0.02em; }
+h2 { font-size: 22px; letter-spacing: -0.015em; }
+h3 { font-size: 18px; }
+h4 { font-size: 15px; }
+
+/* Skeleton */
+@keyframes sc-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.sc-skeleton {
+  background: linear-gradient(90deg, var(--sc-border) 0%, var(--sc-surface-2) 50%, var(--sc-border) 100%);
+  background-size: 800px 100%;
+  animation: sc-shimmer 1.4s infinite linear;
+  border-radius: var(--sc-radius);
+}
+
+/* Toasts (host) */
+.sc-toast-host {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+}
+
+/* Image placeholder (we don't have real product photos) */
+.sc-img-placeholder {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0,0,0,0.03) 0 6px,
+      transparent 6px 12px
+    ),
+    var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sc-text-faint);
+  font-family: var(--sc-mono);
+  font-size: 11px;
+  text-align: center;
+  padding: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Scrollbar (subtle) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--sc-border-strong); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }

@@ -56,4 +56,10 @@ public class InventoryController {
                                          @RequestParam(defaultValue = "RETURN_RESTOCK") String reason) {
         return inventoryService.restock(offerId, quantity, reason);
     }
+
+    @GetMapping("/seller/{sellerId}/stats")
+    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+    public SellerInventoryStatsResponse getSellerStats(@PathVariable UUID sellerId) {
+        return inventoryService.getSellerStats(sellerId);
+    }
 }

@@ -9,7 +9,6 @@ public record CheckoutResponse(
     String orderNumber,
     String status,
     BigDecimal grandTotal,
-    String paymentUrl,
     Instant expiresAt
 ) {
 }

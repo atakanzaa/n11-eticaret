@@ -76,15 +76,32 @@ spring:
           uri: http://localhost:8098
           predicates:
             - Path=/api/ai/**
+        - id: brand-routes
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/brands/**
+        - id: review-routes
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/reviews/**
+        - id: admin-routes
+          uri: http://localhost:8089
+          predicates:
+            - Path=/api/admin/**
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
       globalcors:
+        # Spec: when allowCredentials=true, the wildcard pattern is rejected by browsers,
+        # so origins are listed explicitly. Override via APP_ALLOWED_ORIGINS env var when
+        # deploying behind a real domain.
         cors-configurations:
           '[/**]':
-            allowedOriginPatterns: "*"
-            allowedMethods: "*"
+            allowedOrigins: ${APP_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8080}
+            allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD]
             allowedHeaders: "*"
+            exposedHeaders: [Authorization, Location, Content-Disposition]
             allowCredentials: true
+            maxAge: 3600
   data:
     redis:
       host: ${REDIS_HOST:localhost}

@@ -39,4 +39,8 @@ public class AiBudgetGuard {
     public BigDecimal remainingBudget() {
         return dailyBudget.subtract(todaySpend()).max(BigDecimal.ZERO);
     }
+
+    public BigDecimal getDailyBudget() {
+        return dailyBudget;
+    }
 }

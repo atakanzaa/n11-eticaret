@@ -7,9 +7,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -48,5 +50,24 @@ public class OrderController {
                                                        @PageableDefault(size = 20, sort = "createdAt",
                                                            direction = Sort.Direction.DESC) Pageable pageable) {
         return orderQueryService.getMyOrders(userId, pageable);
+    }
+
+    @GetMapping("/api/orders/seller/{sellerId}/kpi")
+    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+    public SellerOrderKpiResponse getSellerKpi(@PathVariable UUID sellerId) {
+        return orderQueryService.getSellerKpi(sellerId);
+    }
+
+    @GetMapping("/api/orders/seller/{sellerId}/revenue")
+    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+    public List<RevenuePoint> getSellerRevenue(@PathVariable UUID sellerId,
+                                               @RequestParam(defaultValue = "30") int days) {
+        return orderQueryService.getSellerRevenueSeries(sellerId, days);
+    }
+
+    @GetMapping("/api/admin/overview")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AdminOverviewResponse getAdminOverview() {
+        return orderQueryService.getAdminOverview();
     }
 }

@@ -145,8 +145,10 @@ public class CheckoutOrchestrator {
                     "amount", order.getGrandTotal(), "currency", order.getCurrency(),
                     "paymentMethod", order.getPaymentMethod()));
 
+            // Frontend kicks off the real 3DS flow with POST /api/payments/initiate using the orderId
+            // returned here, so we don't surface any payment URL from the order service.
             var response = new CheckoutResponse(order.getId(), order.getOrderNumber(), order.getStatus().name(),
-                order.getGrandTotal(), "/payments/mock/" + order.getId(), order.getExpiresAt());
+                order.getGrandTotal(), order.getExpiresAt());
             saveIdempotency(idempotencyKey, requestHash, response);
             ordersCreated.increment();
             return response;

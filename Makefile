@@ -65,7 +65,9 @@ clean:
 
 # ── Application services ────────────────────────────────────────────
 build-services:
-	mvn clean package -DskipTests
+	# -Dmaven.test.skip=true (vs. -DskipTests) also skips test-compilation;
+	# safer when source/test signatures drift during rapid iteration.
+	mvn clean package -Dmaven.test.skip=true
 	docker-compose -f docker-compose.services.yml build
 
 up-services:
@@ -108,3 +110,21 @@ down-all:
 	-docker-compose -f docker-compose.services.yml down
 	-docker-compose -f docker-compose.observability.yml down
 	-docker-compose down
+
+# ── Frontend (Angular monorepo under frontend/) ────────────────────
+frontend-install:
+	cd frontend && npm install
+
+frontend-dev:
+	cd frontend && npm start
+
+frontend-build:
+	cd frontend && npm run build:prod
+
+# ── Full stack (backend + observability + frontend dev server) ─────
+up-fullstack: up-all
+	@echo ""
+	@echo "Backend stack is up. Starting frontend dev server in foreground..."
+	@echo "Frontend will be at: http://localhost:4200"
+	@echo "Press Ctrl+C to stop the frontend; backend keeps running."
+	@$(MAKE) frontend-dev

@@ -1,0 +1,32 @@
+# Compiled output
+dist/
+tmp/
+out-tsc/
+.angular/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+package-lock.json.backup
+
+# IDE / editor
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.iml
+*.swp
+
+# Environment overrides
+.env
+.env.local
+.env.*.local
+
+# Test outputs
+coverage/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db

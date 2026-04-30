@@ -15,10 +15,16 @@ target/
 # IDE
 .idea/
 *.iml
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .project
 .settings/
 .classpath
+.factorypath
+# Eclipse / JDT-LS (VS Code Java) output dirs — kept out of Maven's target/
+bin/
+.apt_generated/
+.apt_generated_tests/
 
 # Environment
 .env
@@ -42,3 +48,13 @@ docs/api/openapi.json
 # JVM crash logs
 hs_err_pid*
 replay_pid*
+
+# Frontend (Angular monorepo under frontend/)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+frontend/.env
+frontend/.env.local

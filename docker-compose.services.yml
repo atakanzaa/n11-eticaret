@@ -141,6 +141,7 @@ services:
       IYZICO_SECRET_KEY: ${IYZICO_SECRET_KEY:-sandbox-secret-key}
       IYZICO_BASE_URL: ${IYZICO_BASE_URL:-https://sandbox-api.iyzipay.com}
       IYZICO_CALLBACK_URL: ${IYZICO_CALLBACK_URL:-http://localhost:8090/api/payments/iyzico/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
 
   shipment-service:
     <<: *app-base

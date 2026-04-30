@@ -153,6 +153,14 @@ public class InventoryService {
                 .lowStockThreshold(5).allowBackorder(false).build())));
     }
 
+    @Transactional(readOnly = true)
+    public com.smartcommerce.inventory.api.dto.SellerInventoryStatsResponse getSellerStats(UUID sellerId) {
+        return new com.smartcommerce.inventory.api.dto.SellerInventoryStatsResponse(
+            inventoryItemRepository.countBySellerId(sellerId),
+            inventoryItemRepository.countLowStockBySeller(sellerId)
+        );
+    }
+
     @Transactional
     public void releaseExpiredReservations() {
         reservationRepository.findByStatusAndExpiresAtLessThanEqual(ReservationStatus.ACTIVE, Instant.now())

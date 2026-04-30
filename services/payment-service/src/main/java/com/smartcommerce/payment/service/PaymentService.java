@@ -79,18 +79,6 @@ public class PaymentService {
             .description("Total refunded payments").register(registry);
     }
 
-    public PaymentService(PaymentRepository paymentRepository,
-                          PaymentAttemptRepository paymentAttemptRepository,
-                          RefundRepository refundRepository,
-                          PaymentProvider paymentProvider,
-                          OrderClient orderClient, UserClient userClient,
-                          OutboxService outboxService, ObjectMapper objectMapper,
-                          PaymentMapper paymentMapper) {
-        this(paymentRepository, paymentAttemptRepository, refundRepository, paymentProvider,
-            orderClient, userClient, outboxService, objectMapper, paymentMapper,
-            new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
-    }
-
     @Transactional
     public InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request) {
         var existing = paymentRepository.findByOrderId(request.orderId());

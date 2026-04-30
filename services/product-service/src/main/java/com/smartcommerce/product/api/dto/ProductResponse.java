@@ -18,6 +18,8 @@ public record ProductResponse(
     ProductStatus status,
     String primaryImageUrl,
     List<ProductImageDto> images,
-    Long version
+    Long version,
+    double averageRating,
+    long reviewCount
 ) {
 }
