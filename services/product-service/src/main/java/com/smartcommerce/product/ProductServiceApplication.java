@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.smartcommerce.product", "com.smartcommerce.common"})
 @EnableFeignClients
 @EnableScheduling
 public class ProductServiceApplication {
