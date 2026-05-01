@@ -30,7 +30,8 @@ public class OfferCreatedConsumer {
         var offerId = uuid(payload.hasNonNull("offerId") ? payload.get("offerId") : payload.get("id"));
         var productId = uuid(payload.get("productId"));
         var sellerId = uuid(payload.get("sellerId"));
-        inventoryService.createOrGet(offerId, productId, sellerId);
+        var initialStock = payload.hasNonNull("initialStock") ? payload.get("initialStock").asInt(0) : 0;
+        inventoryService.createOrGet(offerId, productId, sellerId, initialStock);
         if (event.getEventId() != null) {
             processedEventRepository.save(new ProcessedEvent(event.getEventId(), Instant.now()));
         }

@@ -145,11 +145,16 @@ public class InventoryService {
 
     @Transactional
     public InventoryItemResponse createOrGet(UUID offerId, UUID productId, UUID sellerId) {
+        return createOrGet(offerId, productId, sellerId, 0);
+    }
+
+    @Transactional
+    public InventoryItemResponse createOrGet(UUID offerId, UUID productId, UUID sellerId, int initialStock) {
         return inventoryItemRepository.findByOfferId(offerId)
             .map(mapper::toResponse)
             .orElseGet(() -> mapper.toResponse(inventoryItemRepository.save(InventoryItem.builder()
                 .offerId(offerId).productId(productId).sellerId(sellerId)
-                .availableQuantity(0).reservedQuantity(0).soldQuantity(0).incomingQuantity(0)
+                .availableQuantity(Math.max(0, initialStock)).reservedQuantity(0).soldQuantity(0).incomingQuantity(0)
                 .lowStockThreshold(5).allowBackorder(false).build())));
     }
 

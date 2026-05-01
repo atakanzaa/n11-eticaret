@@ -3,8 +3,10 @@ package com.smartcommerce.product.api;
 import com.smartcommerce.product.api.dto.*;
 import com.smartcommerce.product.client.SellerClient;
 import com.smartcommerce.product.service.OfferService;
+import feign.FeignException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Slf4j
 public class OfferController {
     private final OfferService offerService;
     private final SellerClient sellerClient;
@@ -41,8 +44,13 @@ public class OfferController {
     @GetMapping("/offers/my")
     @PreAuthorize("hasRole('SELLER')")
     public List<OfferResponse> getMyOffers(@AuthenticationPrincipal String userId) {
-        var sellerId = sellerClient.getSellerIdByUserId(UUID.fromString(userId));
-        return offerService.getMyOffers(sellerId);
+        try {
+            var sellerId = sellerClient.getSellerIdByUserId(UUID.fromString(userId));
+            return offerService.getMyOffers(sellerId);
+        } catch (FeignException.NotFound e) {
+            log.debug("Seller record not yet provisioned for user {}, returning empty offer list", userId);
+            return List.of();
+        }
     }
 
     @GetMapping("/offers/{id}")

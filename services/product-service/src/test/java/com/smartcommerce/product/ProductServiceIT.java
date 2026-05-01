@@ -35,7 +35,7 @@ class ProductServiceIT extends AbstractIntegrationTest {
 
         var offer = offerService.create(sellerId, new CreateOfferRequest(
             product.id(), "SKU-TEST-1", new BigDecimal("100.00"), new BigDecimal("120.00"),
-            CargoProvider.ARAS, BigDecimal.ZERO, 2, new BigDecimal("500.00")));
+            CargoProvider.ARAS, BigDecimal.ZERO, 2, new BigDecimal("500.00"), 0));
 
         var active = offerService.update(sellerId, offer.id(), new UpdateOfferRequest(
             null, null, null, null, null, null, OfferStatus.ACTIVE));
@@ -60,7 +60,7 @@ class ProductServiceIT extends AbstractIntegrationTest {
             "Laptop Test", null, null, null, ELECTRONICS_CATEGORY_ID, Map.of()));
         var offer = offerService.create(sellerId, new CreateOfferRequest(
             product.id(), null, new BigDecimal("200.00"), null, CargoProvider.DEFAULT,
-            BigDecimal.ZERO, 3, null));
+            BigDecimal.ZERO, 3, null, 0));
 
         assertThatThrownBy(() -> offerService.update(otherSellerId, offer.id(), new UpdateOfferRequest(
             new BigDecimal("210.00"), null, null, null, null, null, null)))
@@ -74,7 +74,7 @@ class ProductServiceIT extends AbstractIntegrationTest {
         var product = productService.create(new CreateProductRequest(
             "Tablet Test", null, null, null, ELECTRONICS_CATEGORY_ID, Map.of()));
         var request = new CreateOfferRequest(product.id(), null, new BigDecimal("300.00"),
-            null, CargoProvider.DEFAULT, BigDecimal.ZERO, 3, null);
+            null, CargoProvider.DEFAULT, BigDecimal.ZERO, 3, null, 0);
 
         offerService.create(sellerId, request);
 

@@ -14,6 +14,7 @@ public record CreateOfferRequest(
     CargoProvider cargoProvider,
     @DecimalMin("0.00") BigDecimal cargoPrice,
     @Min(1) @Max(30) Integer estimatedDeliveryDays,
-    @DecimalMin("0.00") BigDecimal freeShippingThreshold
+    @DecimalMin("0.00") BigDecimal freeShippingThreshold,
+    @PositiveOrZero Integer initialStock
 ) {
 }

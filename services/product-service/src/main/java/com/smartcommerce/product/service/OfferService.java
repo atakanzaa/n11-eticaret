@@ -37,6 +37,7 @@ public class OfferService {
             throw new DuplicateResourceException(ErrorCode.DUPLICATE_RESOURCE, "You already have an offer for this product");
         }
 
+        int initialStock = request.initialStock() == null ? 0 : request.initialStock();
         var offer = Offer.builder()
             .productId(product.getId())
             .sellerId(sellerId)
@@ -48,12 +49,23 @@ public class OfferService {
             .cargoPrice(request.cargoPrice() == null ? BigDecimal.ZERO : request.cargoPrice())
             .estimatedDeliveryDays(request.estimatedDeliveryDays() == null ? DEFAULT_DELIVERY_DAYS : request.estimatedDeliveryDays())
             .freeShippingThreshold(request.freeShippingThreshold())
-            .status(OfferStatus.PAUSED)
+            .status(initialStock > 0 ? OfferStatus.ACTIVE : OfferStatus.PAUSED)
             .build();
         offer.normalizeMoney();
         offer = offerRepository.save(offer);
+        var eventPayload = new HashMap<String, Object>();
+        eventPayload.put("id", offer.getId());
+        eventPayload.put("offerId", offer.getId());
+        eventPayload.put("productId", offer.getProductId());
+        eventPayload.put("sellerId", offer.getSellerId());
+        eventPayload.put("sku", offer.getSku());
+        eventPayload.put("price", offer.getPrice());
+        eventPayload.put("currency", offer.getCurrency());
+        eventPayload.put("listPrice", offer.getListPrice());
+        eventPayload.put("status", offer.getStatus());
+        eventPayload.put("initialStock", initialStock);
         outboxService.publish(Topics.OFFER_CREATED, EventType.OFFER_CREATED,
-            offer.getId().toString(), "OFFER", offerMapper.toResponse(offer));
+            offer.getId().toString(), "OFFER", eventPayload);
         return offerMapper.toResponse(offer);
     }
 
