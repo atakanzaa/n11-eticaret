@@ -41,6 +41,11 @@ TOPICS=(
   "cart.item-added.v1"
   "cart.checkout-started.v1"
   "cart.abandoned.v1"
+  "review.created.v1"
+  "review.updated.v1"
+  "review.deleted.v1"
+  "review.approved.v1"
+  "review.rejected.v1"
 )
 
 for topic in "${TOPICS[@]}"; do

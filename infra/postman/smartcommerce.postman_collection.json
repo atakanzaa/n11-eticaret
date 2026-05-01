@@ -1247,55 +1247,6 @@
       ]
     },
     {
-      "name": "MCP Server (Day 5)",
-      "item": [
-        {
-          "name": "List MCP tools",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/mcp/tools",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "mcp", "tools"]
-            }
-          }
-        },
-        {
-          "name": "Invoke search_products",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"telefon\",\n  \"limit\": 5\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/mcp/tools/search_products/invoke",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "mcp", "tools", "search_products", "invoke"]
-            }
-          }
-        },
-        {
-          "name": "Invoke get_recommendations",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"limit\": 5\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/mcp/tools/get_recommendations/invoke",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "mcp", "tools", "get_recommendations", "invoke"]
-            }
-          }
-        }
-      ]
-    },
-    {
       "name": "Fraud Detection (Day 6)",
       "item": [
         {

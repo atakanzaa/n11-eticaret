@@ -23,7 +23,6 @@ scrape_configs:
         - 'host.docker.internal:8094'  # notification
         - 'host.docker.internal:8095'  # fraud (Day 6)
         - 'host.docker.internal:8096'  # return (Day 6)
-        - 'host.docker.internal:8097'  # mcp
         - 'host.docker.internal:8098'  # ai-orchestrator (Day 6)
     relabel_configs:
       - source_labels: [__address__]

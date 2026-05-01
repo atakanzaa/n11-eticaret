@@ -57,7 +57,6 @@
         <module>services/promotion-service</module>
         <module>services/shipment-service</module>
         <module>services/recommendation-service</module>
-        <module>services/mcp-server</module>
         <module>services/fraud-detection-service</module>
         <module>services/return-service</module>
         <module>services/ai-orchestrator</module>

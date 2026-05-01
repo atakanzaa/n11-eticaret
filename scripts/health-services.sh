@@ -19,7 +19,6 @@ services=(
   "notification-service:8094"
   "fraud-detection-service:8095"
   "return-service:8096"
-  "mcp-server:8097"
   "ai-orchestrator:8098"
 )
 
