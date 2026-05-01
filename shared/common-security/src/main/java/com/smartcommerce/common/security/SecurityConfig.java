@@ -1,8 +1,9 @@
 package com.smartcommerce.common.security;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -15,18 +16,27 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-@Configuration
+@AutoConfiguration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtService jwtService;
+    @Bean
+    @ConditionalOnMissingBean
+    public JwtService jwtService(
+        @Value("${jwt.secret}") String secret,
+        @Value("${jwt.access-token-expiration-ms:900000}") long accessTokenExpirationMs,
+        @Value("${jwt.refresh-token-expiration-ms:604800000}") long refreshTokenExpirationMs
+    ) {
+        return new JwtService(secret, accessTokenExpirationMs, refreshTokenExpirationMs);
+    }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
         return http
             .csrf(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
@@ -50,12 +60,12 @@ public class SecurityConfig {
                     "/api/catalog/**",
                     "/api/coupons/validate",
                     "/api/coupons/internal/**",
+                    "/api/campaigns/active-by-offer/**",
                     "/api/shipments/track/**",
                     "/api/shipments/internal/**",
                     "/api/recommendations/popular",
                     "/api/recommendations/products/**",
                     "/api/recommendations/internal/**",
-                    "/api/mcp/**",
                     "/api/fraud/check",
                     "/api/fraud/internal/**",
                     "/api/returns/internal/**",
@@ -66,12 +76,12 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
             .build();
     }
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter() {
+    public JwtAuthFilter jwtAuthFilter(JwtService jwtService) {
         return new JwtAuthFilter(jwtService);
     }
 
