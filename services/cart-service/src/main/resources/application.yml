@@ -45,6 +45,8 @@ services:
     url: ${PRODUCT_SERVICE_URL:http://localhost:8084}
   seller:
     url: ${SELLER_SERVICE_URL:http://localhost:8083}
+  promotion:
+    url: ${PROMOTION_SERVICE_URL:http://localhost:8093}
 
 management:
   endpoints:

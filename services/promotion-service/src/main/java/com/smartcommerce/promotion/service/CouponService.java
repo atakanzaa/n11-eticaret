@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -103,6 +104,15 @@ public class CouponService {
 
     @Transactional
     public CouponResponse create(CreateCouponRequest request) {
+        return createInternal(request, null);
+    }
+
+    @Transactional
+    public CouponResponse createAsSeller(UUID sellerId, CreateCouponRequest request) {
+        return createInternal(request, sellerId);
+    }
+
+    private CouponResponse createInternal(CreateCouponRequest request, UUID sellerScope) {
         if (couponRepository.existsByCode(request.code())) {
             throw new DuplicateResourceException(ErrorCode.DUPLICATE_RESOURCE,
                 "Coupon code already exists: " + request.code());
@@ -110,7 +120,7 @@ public class CouponService {
         if (request.validUntil().isBefore(request.validFrom())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED, "validUntil must be after validFrom");
         }
-        var coupon = Coupon.builder()
+        var builder = Coupon.builder()
             .code(request.code())
             .name(request.name())
             .description(request.description())
@@ -124,9 +134,11 @@ public class CouponService {
             .validUntil(request.validUntil())
             .firstOrderOnly(Boolean.TRUE.equals(request.firstOrderOnly()))
             .stackable(Boolean.TRUE.equals(request.stackable()))
-            .active(true)
-            .build();
-        return mapper.toResponse(couponRepository.save(coupon));
+            .active(true);
+        if (sellerScope != null) {
+            builder.applicableSellerIds(new ArrayList<>(List.of(sellerScope)));
+        }
+        return mapper.toResponse(couponRepository.save(builder.build()));
     }
 
     @Transactional
@@ -137,7 +149,30 @@ public class CouponService {
         return mapper.toResponse(couponRepository.save(coupon));
     }
 
+    @Transactional
+    public CouponResponse deactivateAsSeller(UUID sellerId, UUID id) {
+        var coupon = couponRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Coupon not found"));
+        if (coupon.getApplicableSellerIds() == null || !coupon.getApplicableSellerIds().contains(sellerId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, org.springframework.http.HttpStatus.FORBIDDEN,
+                "Cannot modify another seller's coupon");
+        }
+        coupon.setActive(false);
+        return mapper.toResponse(couponRepository.save(coupon));
+    }
+
     public List<CouponResponse> listAll() {
         return couponRepository.findAll().stream().map(mapper::toResponse).toList();
+    }
+
+    public List<CouponResponse> listActive() {
+        return couponRepository.findCurrentlyActive(Instant.now()).stream()
+            .map(mapper::toResponse).toList();
+    }
+
+    public List<CouponResponse> listMine(UUID sellerId) {
+        var sellerIdJson = "[\"" + sellerId.toString() + "\"]";
+        return couponRepository.findByApplicableSellerId(sellerIdJson).stream()
+            .map(mapper::toResponse).toList();
     }
 }

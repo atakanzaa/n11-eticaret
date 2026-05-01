@@ -29,6 +29,7 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductClient productClient;
     private final SellerClient sellerClient;
+    private final PromotionClient promotionClient;
     private final RedisTemplate<String, Object> redisTemplate;
     private final OutboxService outboxService;
     private final CartMapper cartMapper;
@@ -55,12 +56,28 @@ public class CartService {
         }
         var product = productClient.getProduct(offer.productId());
         var seller = sellerClient.getSeller(offer.sellerId());
+
+        // Campaign override: aktif "Kısa Süreli Teklif" varsa indirimli fiyat uygula
+        var effectivePrice = offer.price();
+        try {
+            var campaign = promotionClient.activeCampaign(offer.id());
+            if (campaign != null && campaign.active() && campaign.discountedPrice() != null) {
+                effectivePrice = campaign.discountedPrice();
+                log.info("Active campaign applied for offer {}: {} -> {}",
+                    offer.id(), offer.price(), effectivePrice);
+            }
+        } catch (Exception e) {
+            log.debug("No active campaign for offer {} (or service unavailable): {}",
+                offer.id(), e.getMessage());
+        }
+
         var existingItem = cartItemRepository.findByCartIdAndOfferId(cart.getId(), request.offerId());
 
         CartItem item;
         if (existingItem.isPresent()) {
             item = existingItem.get();
             item.setQuantity(item.getQuantity() + request.quantity());
+            item.setUnitPriceSnapshot(effectivePrice);
         } else {
             item = CartItem.builder()
                 .cart(cart)
@@ -68,7 +85,7 @@ public class CartService {
                 .productId(offer.productId())
                 .sellerId(offer.sellerId())
                 .quantity(request.quantity())
-                .unitPriceSnapshot(offer.price())
+                .unitPriceSnapshot(effectivePrice)
                 .currencySnapshot(offer.currency())
                 .productTitleSnapshot(product.title())
                 .productImageSnapshot(product.primaryImageUrl())
