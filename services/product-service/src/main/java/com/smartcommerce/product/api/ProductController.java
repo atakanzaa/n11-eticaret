@@ -21,8 +21,10 @@ public class ProductController {
     public Page<ProductResponse> search(@RequestParam(required = false) String query,
                                         @RequestParam(required = false) UUID categoryId,
                                         @RequestParam(required = false) UUID brandId,
+                                        @RequestParam(required = false) Integer minRating,
                                         Pageable pageable) {
-        return productService.search(query, categoryId, brandId, pageable);
+        Double minRatingDouble = minRating != null ? minRating.doubleValue() : null;
+        return productService.search(query, categoryId, brandId, minRatingDouble, pageable);
     }
 
     @GetMapping("/{id}")
@@ -31,7 +33,7 @@ public class ProductController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     @ResponseStatus(HttpStatus.CREATED)
     public ProductResponse create(@Valid @RequestBody CreateProductRequest request) {
         return productService.create(request);
