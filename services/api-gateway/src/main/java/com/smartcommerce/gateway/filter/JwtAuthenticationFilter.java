@@ -23,7 +23,16 @@ import java.util.List;
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final List<String> PUBLIC_PATHS = List.of(
+        // Auth
         "/api/auth/register", "/api/auth/login", "/api/auth/refresh",
+        // Storefront — public browsing (no login required)
+        "/api/categories", "/api/products", "/api/search",
+        "/api/brands",
+        // Review read (public)
+        "/api/reviews",
+        // Campaign (active-by-offer is public for product detail badge)
+        "/api/campaigns/active-by-offer",
+        // Infrastructure
         "/actuator", "/swagger-ui", "/v3/api-docs"
     );
 
@@ -36,12 +45,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         var path = exchange.getRequest().getPath().toString();
+        var method = exchange.getRequest().getMethod();
+        log.info("JWT filter — method={} path={} isPublic={}", method, path, isPublicPath(path));
         if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
 
         var authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.info("JWT filter — REJECTED (no Bearer token) path={}", path);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }

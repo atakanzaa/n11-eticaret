@@ -43,7 +43,6 @@ services:
       NOTIFICATION_SERVICE_URL: http://notification-service:8094
       FRAUD_SERVICE_URL: http://fraud-detection-service:8095
       RETURN_SERVICE_URL: http://return-service:8096
-      MCP_SERVER_URL: http://mcp-server:8097
       AI_ORCHESTRATOR_URL: http://ai-orchestrator:8098
 
   # ---------- Identity ----------
@@ -114,6 +113,8 @@ services:
     environment:
       <<: *app-env
       PRODUCT_SERVICE_URL: http://product-service:8084
+      SELLER_SERVICE_URL: http://seller-service:8083
+      PROMOTION_SERVICE_URL: http://promotion-service:8093
 
   order-service:
     <<: *app-base
@@ -192,19 +193,6 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:8090
       INVENTORY_SERVICE_URL: http://inventory-service:8085
 
-  mcp-server:
-    <<: *app-base
-    build: ./services/mcp-server
-    container_name: smartcommerce-mcp-server
-    ports: ["8097:8097"]
-    environment:
-      <<: *app-env
-      CATALOG_SERVICE_URL: http://catalog-service:8086
-      PRODUCT_SERVICE_URL: http://product-service:8084
-      RECOMMENDATION_SERVICE_URL: http://recommendation-service:8087
-      ORDER_SERVICE_URL: http://order-service:8089
-      CART_SERVICE_URL: http://cart-service:8088
-
   ai-orchestrator:
     <<: *app-base
     build: ./services/ai-orchestrator
@@ -212,7 +200,6 @@ services:
     ports: ["8098:8098"]
     environment:
       <<: *app-env
-      MCP_SERVER_URL: http://mcp-server:8097
       PRODUCT_SERVICE_URL: http://product-service:8084
       AI_PROVIDER: ${AI_PROVIDER:-anthropic}
       AI_API_KEY: ${AI_API_KEY:-dummy-replace-in-env}
