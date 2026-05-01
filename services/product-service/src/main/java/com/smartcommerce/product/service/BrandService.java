@@ -1,5 +1,6 @@
 package com.smartcommerce.product.service;
 
+import com.smartcommerce.common.errors.ErrorCode;
 import com.smartcommerce.common.errors.ResourceNotFoundException;
 import com.smartcommerce.product.api.dto.BrandResponse;
 import com.smartcommerce.product.api.mapper.BrandMapper;
@@ -24,6 +25,6 @@ public class BrandService {
     public BrandResponse getBySlug(String slug) {
         return brandRepository.findBySlug(slug)
             .map(mapper::toResponse)
-            .orElseThrow(() -> new ResourceNotFoundException("Brand not found: " + slug));
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Brand not found: " + slug));
     }
 }

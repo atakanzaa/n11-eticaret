@@ -3,8 +3,11 @@ package com.smartcommerce.product.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -44,6 +47,9 @@ public class Review {
     @Column(name = "helpful_count", nullable = false)
     private int helpfulCount;
 
+    @Column(name = "unhelpful_count", nullable = false)
+    private int unhelpfulCount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ReviewStatus status;
@@ -52,7 +58,37 @@ public class Review {
     @Column(name = "order_id")
     private UUID orderId;
 
+    @Column(name = "verified_purchase", nullable = false)
+    private boolean verifiedPurchase;
+
+    // ── Moderation fields ──
+    @Column(name = "moderated_at")
+    private Instant moderatedAt;
+
+    @Column(name = "moderated_by")
+    private UUID moderatedBy;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    // ── Soft-delete ──
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    // ── Relationships ──
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<ReviewImage> images = new ArrayList<>();
+
+    @OneToOne(mappedBy = "review", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ReviewReply reply;
 }

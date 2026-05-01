@@ -14,6 +14,10 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     @Query("SELECT c FROM Category c WHERE c.active = true ORDER BY c.displayOrder ASC, c.name ASC")
     List<Category> findAllActiveOrdered();
 
+    List<Category> findAllByOrderByDisplayOrderAscNameAsc();
+
     @Query("SELECT COUNT(p.id) FROM Product p WHERE p.categoryId = :categoryId AND p.deletedAt IS NULL")
     long countActiveProducts(UUID categoryId);
+
+    long countByParentId(UUID parentId);
 }

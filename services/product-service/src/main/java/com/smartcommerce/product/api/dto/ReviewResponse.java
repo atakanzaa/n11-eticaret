@@ -1,6 +1,7 @@
 package com.smartcommerce.product.api.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record ReviewResponse(
@@ -12,6 +13,10 @@ public record ReviewResponse(
     String comment,
     String variantInfo,
     int helpfulCount,
-    Instant createdAt
-) {
-}
+    int unhelpfulCount,
+    boolean verifiedPurchase,
+    List<String> imageUrls,
+    ReviewReplyResponse sellerReply,
+    Instant createdAt,
+    Instant updatedAt
+) {}

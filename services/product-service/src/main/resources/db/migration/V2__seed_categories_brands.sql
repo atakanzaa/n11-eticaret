@@ -10,7 +10,8 @@ INSERT INTO categories (id, parent_id, name, slug, description, image_url, displ
     (uuid_generate_v4(), NULL, 'Süpermarket',      'supermarket',      'Gıda, içecek, temizlik, kişisel bakım', NULL, 5, TRUE),
     (uuid_generate_v4(), NULL, 'Spor & Outdoor',   'spor-outdoor',     'Spor giyim, ayakkabı, ekipman, outdoor', NULL, 6, TRUE),
     (uuid_generate_v4(), NULL, 'Kitap',            'kitap',            'Edebiyat, kişisel gelişim, çocuk kitapları', NULL, 7, TRUE),
-    (uuid_generate_v4(), NULL, 'Anne & Bebek',     'anne-bebek',       'Bebek bakımı, oyuncak, çocuk giyim', NULL, 8, TRUE);
+    (uuid_generate_v4(), NULL, 'Anne & Bebek',     'anne-bebek',       'Bebek bakımı, oyuncak, çocuk giyim', NULL, 8, TRUE)
+ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO brands (id, name, slug, logo_url, is_active) VALUES
     (uuid_generate_v4(), 'Apple',     'apple',     NULL, TRUE),
@@ -27,4 +28,5 @@ INSERT INTO brands (id, name, slug, logo_url, is_active) VALUES
     (uuid_generate_v4(), 'Defacto',   'defacto',   NULL, TRUE),
     (uuid_generate_v4(), 'Arçelik',   'arcelik',   NULL, TRUE),
     (uuid_generate_v4(), 'Vestel',    'vestel',    NULL, TRUE),
-    (uuid_generate_v4(), 'Bosch',     'bosch',     NULL, TRUE);
+    (uuid_generate_v4(), 'Bosch',     'bosch',     NULL, TRUE)
+ON CONFLICT (slug) DO NOTHING;

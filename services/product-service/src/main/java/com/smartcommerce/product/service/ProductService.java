@@ -83,8 +83,10 @@ public class ProductService {
         return productMapper.toResponse(product);
     }
 
-    public Page<ProductResponse> search(String query, UUID categoryId, UUID brandId, Pageable pageable) {
-        return productRepository.search(query, categoryId, brandId, pageable).map(productMapper::toResponse);
+    public Page<ProductResponse> search(String query, UUID categoryId, UUID brandId,
+                                        Double minRating, Pageable pageable) {
+        return productRepository.search(query, categoryId, brandId, minRating, pageable)
+            .map(productMapper::toResponse);
     }
 
     private String uniqueSlug(String title) {

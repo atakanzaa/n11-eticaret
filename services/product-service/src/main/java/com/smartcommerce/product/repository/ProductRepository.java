@@ -16,12 +16,14 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query("""
         select p from Product p
         where p.deletedAt is null
-          and (:query is null or lower(p.title) like lower(concat('%', :query, '%')))
-          and (:categoryId is null or p.categoryId = :categoryId)
-          and (:brandId is null or p.brandId = :brandId)
+          and (cast(:query as string) is null or lower(p.title) like lower(concat('%', cast(:query as string), '%')))
+          and (cast(:categoryId as uuid) is null or p.categoryId = :categoryId)
+          and (cast(:brandId as uuid) is null or p.brandId = :brandId)
+          and (:minRating is null or p.averageRating >= :minRating)
         """)
     Page<Product> search(@Param("query") String query,
                          @Param("categoryId") UUID categoryId,
                          @Param("brandId") UUID brandId,
+                         @Param("minRating") Double minRating,
                          Pageable pageable);
 }
