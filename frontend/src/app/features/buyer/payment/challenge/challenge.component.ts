@@ -1,7 +1,16 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { TPipe } from '@shared/i18n.pipe';
+import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
 
 /**
  * Renders Iyzico's 3DS challenge form. The HTML payload comes from the previous
@@ -14,32 +23,9 @@ import { TPipe } from '@shared/i18n.pipe';
   selector: 'sc-payment-challenge',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TPipe],
-  template: `
-    <div class="card">
-      <h2>{{ 'checkout.paymentChallenge' | t }}</h2>
-      <p class="muted">Banka 3D Secure ekranı yükleniyor…</p>
-      <div #host class="host" [innerHTML]="safeHtml"></div>
-    </div>
-  `,
-  styles: [
-    `
-      .card {
-        max-width: 720px;
-        margin: 32px auto;
-        background: var(--sc-surface);
-        border: 1px solid var(--sc-border);
-        border-radius: var(--sc-radius);
-        padding: 32px;
-      }
-      .host {
-        margin-top: 16px;
-      }
-      .muted {
-        color: var(--sc-text-muted);
-      }
-    `,
-  ],
+  imports: [TPipe, SpinnerComponent],
+  templateUrl: './challenge.component.html',
+  styleUrls: ['./challenge.component.scss'],
 })
 export class PaymentChallengeComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -49,15 +35,16 @@ export class PaymentChallengeComponent implements OnInit {
   @ViewChild('host', { static: false }) host?: ElementRef<HTMLDivElement>;
 
   safeHtml: SafeHtml = '';
+  readonly loading = signal(true);
 
   ngOnInit(): void {
     const html = (history.state?.html as string | undefined) ?? '';
     if (!html) {
-      // No payload — user probably navigated here directly. Send them back to checkout.
       this.router.navigate(['/odeme']);
       return;
     }
     this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.loading.set(false);
 
     // Iyzico's sandbox sometimes ships a `<script>document.forms[0].submit()</script>`
     // tail; Angular won't re-execute scripts injected via [innerHTML]. We auto-submit

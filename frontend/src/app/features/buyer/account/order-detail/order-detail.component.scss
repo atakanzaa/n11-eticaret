@@ -1,0 +1,267 @@
+.spinner-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 8px 0 24px;
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+  }
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-date {
+  font-size: 13px;
+  color: var(--sc-text-faint, var(--sc-text-muted));
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+.card {
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  padding: 20px;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0 0 16px;
+    font-size: 15px;
+  }
+}
+
+// Cargo / shipment info
+.cargo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+  flex-wrap: wrap;
+}
+
+.cargo-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+
+  code {
+    background: var(--sc-surface);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: var(--sc-mono, monospace);
+  }
+}
+
+.cargo-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-primary);
+  text-decoration: none;
+  margin-left: auto;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.cargo-eta {
+  width: 100%;
+  font-size: 12px;
+  color: var(--sc-text-muted);
+}
+
+// Order items
+.ln {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sc-border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--sc-surface-2);
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.04) 0 6px,
+      transparent 6px 12px
+    ),
+    var(--sc-surface-2);
+}
+
+.item-info {
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.item-meta {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+  margin-top: 2px;
+}
+
+.item-seller {
+  font-size: 11px;
+  color: var(--sc-text-faint, var(--sc-text-muted));
+  margin-top: 2px;
+}
+
+.item-price {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+// Sidebar
+.addr {
+  strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: 13px;
+    color: var(--sc-text-muted);
+    margin: 4px 0;
+  }
+}
+
+.pay-status {
+  font-size: 13px;
+  color: var(--sc-text-muted);
+  margin-bottom: 4px;
+}
+
+.pay-card {
+  font-size: 13px;
+  font-family: var(--sc-mono, monospace);
+  color: var(--sc-text-muted);
+}
+
+.pay-installment {
+  font-size: 12px;
+  color: var(--sc-text-faint, var(--sc-text-muted));
+  margin-top: 4px;
+}
+
+// Summary
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+
+  &.total {
+    font-size: 16px;
+    font-weight: 700;
+    border-top: 1px solid var(--sc-border);
+    padding-top: 10px;
+    margin-top: 6px;
+  }
+}
+
+// Action buttons
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--sc-radius);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  transition: opacity 0.2s;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-return {
+  background: var(--sc-primary);
+  color: #fff;
+  flex: 1;
+  justify-content: center;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.btn-cancel {
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  color: var(--sc-text);
+
+  &:hover {
+    border-color: var(--sc-danger, #ef4444);
+    color: var(--sc-danger, #ef4444);
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

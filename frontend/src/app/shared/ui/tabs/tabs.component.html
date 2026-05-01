@@ -1,0 +1,15 @@
+<div class="tabs">
+  <div class="tab-list" role="tablist">
+    @for (panel of panels; track panel; let i = $index) {
+      <button
+        role="tab"
+        [class.active]="i === selectedIndex()"
+        [disabled]="panel.disabled()"
+        (click)="select(i)"
+      >{{ panel.label() }}</button>
+    }
+  </div>
+  <div class="tab-content">
+    <ng-content />
+  </div>
+</div>

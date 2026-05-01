@@ -1,0 +1,26 @@
+<div class="host" aria-live="polite">
+  @for (t of toast.toasts(); track t.id) {
+    <div
+      class="toast"
+      [class]="t.kind"
+      (click)="toast.dismiss(t.id)"
+      role="alert"
+    >
+      <span class="icon">
+        @switch (t.kind) {
+          @case ('success') { &#x2713; }
+          @case ('danger')  { &#x2717; }
+          @case ('warn')    { &#x26A0; }
+          @default          { &#x2139; }
+        }
+      </span>
+      <span class="message">{{ t.message }}</span>
+      <button
+        type="button"
+        class="dismiss"
+        (click)="toast.dismiss(t.id)"
+        aria-label="Kapat"
+      >&times;</button>
+    </div>
+  }
+</div>

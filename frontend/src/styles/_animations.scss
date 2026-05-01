@@ -1,0 +1,53 @@
+// ─── SmartCommerce Animations ────────────────────────────────────────────────
+
+// Skeleton shimmer (loading placeholder)
+@keyframes sc-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+// Fade in
+@keyframes sc-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+// Slide up + fade
+@keyframes sc-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Slide down (for dropdowns, menus)
+@keyframes sc-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Spin (for loading spinners)
+@keyframes sc-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+// Typing dots (AI chat)
+@keyframes sc-dot-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40%           { opacity: 1;   transform: scale(1); }
+}
+
+// ─── Utility classes ─────────────────────────────────────────────────────────
+.sc-animate-fade-in  { animation: sc-fade-in  200ms ease; }
+.sc-animate-slide-up { animation: sc-slide-up 200ms ease; }

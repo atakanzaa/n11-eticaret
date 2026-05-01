@@ -8,7 +8,7 @@ export interface UserProfileDto {
   lastName: string;
   phone?: string;
   dateOfBirth?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
   avatarUrl?: string;
   preferredLanguage?: string;
   preferredCurrency?: string;
@@ -24,7 +24,7 @@ export interface UpdateProfileRequest {
   lastName?: string;
   phone?: string;
   dateOfBirth?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
   avatarUrl?: string;
   preferredLanguage?: string;
   preferredCurrency?: string;

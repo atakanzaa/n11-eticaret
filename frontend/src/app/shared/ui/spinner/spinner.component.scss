@@ -1,0 +1,30 @@
+:host { display: block; }
+
+.spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+.spinner {
+  animation: sc-spin 800ms linear infinite;
+
+  .track { stroke: var(--sc-border); }
+  .arc   { stroke: var(--sc-primary); stroke-dasharray: 42; stroke-dashoffset: 14; }
+}
+
+.sm .spinner { width: 20px; height: 20px; }
+.base .spinner { width: 32px; height: 32px; }
+.lg .spinner { width: 48px; height: 48px; }
+
+.label {
+  font-size: 13px;
+  color: var(--sc-text-muted);
+}
+
+@keyframes sc-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

@@ -1,0 +1,20 @@
+<h1>{{ 'admin.overview' | t }}</h1>
+
+@if (loading()) {
+  <sc-spinner size="lg" label="Yukleniyor..." />
+} @else if (data()) {
+  <section class="cards">
+    <sc-kpi-card
+      [label]="('admin.gmv30d' | t)"
+      [value]="data()!.gmv30d | scCurrency" />
+    <sc-kpi-card
+      [label]="('admin.orders30d' | t)"
+      [value]="(data()!.ordersCount30d | number) ?? ''" />
+    <sc-kpi-card
+      [label]="('admin.avgBasket' | t)"
+      [value]="data()!.averageBasket | scCurrency" />
+    <sc-kpi-card
+      [label]="('admin.activeSellers' | t)"
+      [value]="(data()!.activeSellers30d | number) ?? ''" />
+  </section>
+}

@@ -1,0 +1,247 @@
+<div class="sc-container">
+  <sc-breadcrumb [items]="breadcrumbs()" />
+
+  <div class="wrap">
+    <!-- SIDEBAR FILTERS -->
+    <aside class="facets">
+      <div class="facets-header">
+        <h3>Filtreler</h3>
+        @if (activeFilterCount() > 0) {
+          <button class="clear-btn" (click)="clearFilters()">Temizle</button>
+        }
+      </div>
+
+      <!-- Category Filter -->
+      <div class="facet">
+        <h4>Kategori</h4>
+        <select
+          class="sc-input"
+          [ngModel]="selectedCategoryId()"
+          (ngModelChange)="onCategoryChange($event)">
+          <option [ngValue]="undefined">Tumu</option>
+          @for (c of categories(); track c.id) {
+            <option [ngValue]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Brand Filter -->
+      <div class="facet">
+        <h4>Marka</h4>
+        <select
+          class="sc-input"
+          [ngModel]="selectedBrandId()"
+          (ngModelChange)="onBrandChange($event)">
+          <option [ngValue]="undefined">Tumu</option>
+          @for (b of brands(); track b.id) {
+            <option [ngValue]="b.id">{{ b.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Sort -->
+      <div class="facet">
+        <h4>Siralama</h4>
+        <select
+          class="sc-input"
+          [ngModel]="sort()"
+          (ngModelChange)="onSortChange($event)">
+          <option value="">Onerilen</option>
+          <option value="title,asc">Isim (A-Z)</option>
+          <option value="title,desc">Isim (Z-A)</option>
+          <option value="averageRating,desc">En cok puanlanan</option>
+        </select>
+      </div>
+
+      <!-- Rating Filter -->
+      <div class="facet">
+        <h4>Degerlendirme</h4>
+        <div class="rating-filter">
+          @for (r of [4, 3, 2, 1]; track r) {
+            <label class="rating-row">
+              <input
+                type="radio"
+                name="minRating"
+                [value]="r"
+                [checked]="selectedMinRating() === r"
+                (change)="onMinRatingChange(r)" />
+              <span class="stars">
+                @for (s of [1, 2, 3, 4, 5]; track s) {
+                  <span class="star" [class.filled]="s <= r">&#9733;</span>
+                }
+              </span>
+              <span class="rating-text">ve uzeri</span>
+            </label>
+          }
+          @if (selectedMinRating() !== null) {
+            <button type="button" class="clear-rating" (click)="onMinRatingChange(null)">
+              Temizle
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Price Range -->
+      <div class="facet">
+        <h4>Fiyat araligi</h4>
+        <div class="range-row">
+          <input
+            type="number"
+            class="sc-input"
+            [ngModel]="priceMin()"
+            (ngModelChange)="onPriceMinChange($event)"
+            placeholder="Min" />
+          <span class="range-sep">-</span>
+          <input
+            type="number"
+            class="sc-input"
+            [ngModel]="priceMax()"
+            (ngModelChange)="onPriceMaxChange($event)"
+            placeholder="Max" />
+        </div>
+      </div>
+
+      <!-- In Stock Toggle -->
+      <div class="facet">
+        <label class="check">
+          <input
+            type="checkbox"
+            [ngModel]="inStockOnly()"
+            (ngModelChange)="onInStockChange($event)" />
+          <span>Yalnizca stokta</span>
+        </label>
+      </div>
+    </aside>
+
+    <!-- RESULTS -->
+    <section class="results">
+      <div class="topbar">
+        <div>
+          <h1>{{ heading() }}</h1>
+          @if (pageData()) {
+            <p class="count">{{ totalElements() }} sonuc</p>
+          }
+        </div>
+        <div class="controls">
+          <div class="view">
+            <button [class.active]="view() === 'grid'" (click)="view.set('grid')" aria-label="Grid gorunum">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <rect x="1" y="1" width="6" height="6" rx="1" />
+                <rect x="9" y="1" width="6" height="6" rx="1" />
+                <rect x="1" y="9" width="6" height="6" rx="1" />
+                <rect x="9" y="9" width="6" height="6" rx="1" />
+              </svg>
+            </button>
+            <button [class.active]="view() === 'list'" (click)="view.set('list')" aria-label="Liste gorunum">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <rect x="1" y="2" width="14" height="2.5" rx="1" />
+                <rect x="1" y="6.75" width="14" height="2.5" rx="1" />
+                <rect x="1" y="11.5" width="14" height="2.5" rx="1" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Filters -->
+      @if (activeFilterCount() > 0) {
+        <div class="active-filters">
+          @if (selectedCategoryId()) {
+            <span class="filter-tag">
+              Kategori: {{ getCategoryName(selectedCategoryId()) }}
+              <button (click)="onCategoryChange(undefined)">&times;</button>
+            </span>
+          }
+          @if (selectedBrandId()) {
+            <span class="filter-tag">
+              Marka: {{ getBrandName(selectedBrandId()) }}
+              <button (click)="onBrandChange(undefined)">&times;</button>
+            </span>
+          }
+          @if (priceMin() !== null) {
+            <span class="filter-tag">
+              Min: {{ priceMin() }} TL
+              <button (click)="onPriceMinChange('')">&times;</button>
+            </span>
+          }
+          @if (priceMax() !== null) {
+            <span class="filter-tag">
+              Max: {{ priceMax() }} TL
+              <button (click)="onPriceMaxChange('')">&times;</button>
+            </span>
+          }
+          @if (inStockOnly()) {
+            <span class="filter-tag">
+              Stokta
+              <button (click)="onInStockChange(false)">&times;</button>
+            </span>
+          }
+        </div>
+      }
+
+      <!-- Loading / Empty / Results -->
+      @if (loading()) {
+        <div class="loading-container">
+          <sc-spinner size="lg" label="Urunler yukleniyor..." />
+        </div>
+      } @else if (items().length === 0) {
+        <sc-empty-state
+          icon="search"
+          title="Sonuc bulunamadi"
+          description="Arama kriterlerinize uygun urun bulunamadi. Filtreleri degistirmeyi deneyin." />
+      } @else {
+        @if (view() === 'grid') {
+          <div class="grid">
+            @for (item of items(); track item.product.id) {
+              <sc-product-card [product]="item.product" [offer]="item.offer" />
+            }
+          </div>
+        } @else {
+          <div class="list">
+            @for (item of items(); track item.product.id) {
+              <a class="row" [routerLink]="['/urun', item.product.id]">
+                <div class="ph">
+                  @if (item.product.primaryImageUrl) {
+                    <img [src]="item.product.primaryImageUrl" [alt]="item.product.title" />
+                  } @else {
+                    <span class="placeholder-text">Gorsel yok</span>
+                  }
+                </div>
+                <div class="info">
+                  <div class="ttl">{{ item.product.title }}</div>
+                  @if (item.product.shortDescription) {
+                    <div class="desc">{{ item.product.shortDescription }}</div>
+                  }
+                  <div class="rt">
+                    @if (item.product.averageRating > 0) {
+                      <span class="stars">{{ item.product.averageRating.toFixed(1) }}</span>
+                      <span class="reviews">{{ item.product.reviewCount }} degerlendirme</span>
+                    }
+                  </div>
+                </div>
+                <div class="pricing">
+                  @if (item.offer) {
+                    @if (item.offer.listPrice && item.offer.listPrice > item.offer.price) {
+                      <div class="orig">{{ item.offer.listPrice | number:'1.2-2' }} TL</div>
+                    }
+                    <div class="price">{{ item.offer.price | number:'1.2-2' }} TL</div>
+                  }
+                </div>
+              </a>
+            }
+          </div>
+        }
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <sc-pagination
+            [currentPage]="currentPage()"
+            [totalPages]="totalPages()"
+            [isFirst]="isFirst()"
+            [isLast]="isLast()"
+            (pageChange)="onPageChange($event)" />
+        }
+      }
+    </section>
+  </div>
+</div>

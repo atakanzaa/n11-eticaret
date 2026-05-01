@@ -1,4 +1,17 @@
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+export type OrderStatus =
+  | 'CREATED'
+  | 'FRAUD_FLAGGED'
+  | 'PAYMENT_PENDING'
+  | 'PAYMENT_FAILED'
+  | 'EXPIRED'
+  | 'CANCELLED'
+  | 'CONFIRMED'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'COMPLETED'
+  | 'RETURN_REQUESTED'
+  | 'REFUNDED';
 
 export interface OrderItemResponse {
   id: string;

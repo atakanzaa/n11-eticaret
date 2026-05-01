@@ -1,4 +1,4 @@
-export type ReservationStatus = 'PENDING' | 'ACTIVE' | 'CONFIRMED' | 'RELEASED' | 'EXPIRED';
+export type ReservationStatus = 'ACTIVE' | 'CONFIRMED' | 'RELEASED' | 'EXPIRED';
 
 export interface InventoryItemResponse {
   id: string;

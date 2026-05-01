@@ -1,0 +1,40 @@
+<div class="page">
+  <header class="head">
+    <a [routerLink]="['/']" class="back">&larr;</a>
+    <h1>{{ 'ai.assistant' | t }}</h1>
+    <button type="button" class="reset" (click)="reset()">{{ 'common.cancel' | t }}</button>
+  </header>
+
+  <main class="messages">
+    @if (assistant.messages().length === 0) {
+      <div class="welcome">
+        <h2>{{ 'ai.welcome' | t }}</h2>
+        <p class="muted">Urun onerileri, hediye fikirleri veya kategori karsilastirmalari icin sorabilirsiniz.</p>
+      </div>
+    }
+    @for (m of assistant.messages(); track $index) {
+      <div class="msg" [class]="m.role">
+        <div class="bubble">{{ m.content }}</div>
+      </div>
+    }
+    @if (assistant.loading()) {
+      <div class="msg assistant">
+        <div class="bubble typing">&hellip;</div>
+      </div>
+    }
+  </main>
+
+  <form class="composer" (submit)="onSubmit($event)">
+    <input
+      type="text"
+      [(ngModel)]="draft"
+      name="msg"
+      [placeholder]="'ai.placeholder' | t"
+      [disabled]="assistant.loading()"
+      autofocus
+    />
+    <button type="submit" class="send" [disabled]="!draft.trim() || assistant.loading()">
+      Gonder &rarr;
+    </button>
+  </form>
+</div>

@@ -7,8 +7,11 @@ export interface SearchQuery {
   q?: string;
   categoryId?: string;
   brandId?: string;
+  sellerId?: string;
   minPrice?: number;
   maxPrice?: number;
+  /** Minimum average product rating, 1-5 inclusive. */
+  minRating?: number;
   inStockOnly?: boolean;
   sort?: string;
   page?: number;

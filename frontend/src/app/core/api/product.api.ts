@@ -13,6 +13,8 @@ export interface ProductSearchParams {
   query?: string;
   categoryId?: string;
   brandId?: string;
+  /** Minimum average rating, 1-5 inclusive. */
+  minRating?: number;
   page?: number;
   size?: number;
   sort?: string;
@@ -28,6 +30,9 @@ export class ProductApi {
     if (params.query) httpParams = httpParams.set('query', params.query);
     if (params.categoryId) httpParams = httpParams.set('categoryId', params.categoryId);
     if (params.brandId) httpParams = httpParams.set('brandId', params.brandId);
+    if (params.minRating !== undefined && params.minRating !== null) {
+      httpParams = httpParams.set('minRating', params.minRating);
+    }
     if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
     if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
     if (params.sort) httpParams = httpParams.set('sort', params.sort);

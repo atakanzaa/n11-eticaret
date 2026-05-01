@@ -1,0 +1,231 @@
+<div class="page-header">
+  <div>
+    <h1>{{ 'admin.categoryManagement' | t }}</h1>
+    <p class="subtitle">{{ 'admin.categoryManagementHint' | t }}</p>
+  </div>
+  <button type="button" class="btn primary" (click)="openCreateModal()">
+    + {{ 'admin.addCategory' | t }}
+  </button>
+</div>
+
+@if (loading()) {
+  <sc-spinner size="lg" [label]="'common.loading' | t" />
+} @else if (tree().length === 0) {
+  <sc-empty-state
+    icon="📂"
+    [title]="'common.empty' | t"
+    [description]="'admin.noCategoriesHint' | t" />
+} @else {
+  <div class="category-tree">
+    @for (node of tree(); track node.category.id) {
+      <!-- Top-level category -->
+      <div class="category-card top-level">
+        <div class="category-row">
+          <div class="category-info">
+            <span class="category-order">{{ node.category.displayOrder }}</span>
+            <div class="category-details">
+              <strong class="category-name">{{ node.category.name }}</strong>
+              <span class="category-slug">/{{ node.category.slug }}</span>
+              @if (node.category.description) {
+                <span class="category-desc">{{ node.category.description }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="category-meta">
+            <span class="product-count">{{ node.category.productCount }} {{ 'admin.products' | t }}</span>
+            <sc-status-badge
+              [label]="activeLabel(node.category)"
+              [variant]="activeVariant(node.category)" />
+          </div>
+
+          <div class="category-actions">
+            <button type="button" class="btn-icon" (click)="openCreateModal(node.category.id)"
+                    title="Alt Kategori Ekle">
+              &#43;
+            </button>
+            <button type="button" class="btn-icon" (click)="openEditModal(node.category)"
+                    title="Duzenle">
+              &#9998;
+            </button>
+            <button type="button" class="btn-icon" (click)="toggleActive(node.category)"
+                    [title]="node.category.active ? 'Pasif Yap' : 'Aktif Yap'">
+              @if (node.category.active) {
+                &#128683;
+              } @else {
+                &#10003;
+              }
+            </button>
+            <button type="button" class="btn-icon danger" (click)="openDeleteConfirm(node.category)"
+                    title="Sil">
+              &#128465;
+            </button>
+          </div>
+        </div>
+
+        <!-- Subcategories -->
+        @if (node.children.length > 0) {
+          <div class="subcategories">
+            @for (child of node.children; track child.category.id) {
+              <div class="category-card sub-level">
+                <div class="category-row">
+                  <div class="category-info">
+                    <span class="sub-indicator">&#8627;</span>
+                    <span class="category-order">{{ child.category.displayOrder }}</span>
+                    <div class="category-details">
+                      <strong class="category-name">{{ child.category.name }}</strong>
+                      <span class="category-slug">/{{ child.category.slug }}</span>
+                    </div>
+                  </div>
+
+                  <div class="category-meta">
+                    <span class="product-count">{{ child.category.productCount }} {{ 'admin.products' | t }}</span>
+                    <sc-status-badge
+                      [label]="activeLabel(child.category)"
+                      [variant]="activeVariant(child.category)" />
+                  </div>
+
+                  <div class="category-actions">
+                    <button type="button" class="btn-icon" (click)="openEditModal(child.category)"
+                            title="Duzenle">
+                      &#9998;
+                    </button>
+                    <button type="button" class="btn-icon" (click)="toggleActive(child.category)"
+                            [title]="child.category.active ? 'Pasif Yap' : 'Aktif Yap'">
+                      @if (child.category.active) {
+                        &#128683;
+                      } @else {
+                        &#10003;
+                      }
+                    </button>
+                    <button type="button" class="btn-icon danger" (click)="openDeleteConfirm(child.category)"
+                            title="Sil">
+                      &#128465;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<!-- Create Category Modal -->
+<sc-modal [open]="showCreateModal()" [title]="'admin.addCategory' | t" size="lg" (closed)="showCreateModal.set(false)">
+  <form (ngSubmit)="submitCreate()">
+    <sc-form-field [label]="'admin.parentCategory' | t">
+      <select [(ngModel)]="createForm.parentId" name="parentId">
+        <option [ngValue]="undefined">{{ 'admin.topLevelCategory' | t }}</option>
+        @for (cat of topLevelCategories(); track cat.id) {
+          <option [ngValue]="cat.id">{{ cat.name }}</option>
+        }
+      </select>
+    </sc-form-field>
+
+    <sc-form-field [label]="'admin.categoryName' | t" [required]="true">
+      <input [ngModel]="createForm.name"
+             (ngModelChange)="onCreateNameChange($event)"
+             name="name"
+             [placeholder]="'admin.categoryNamePlaceholder' | t" />
+    </sc-form-field>
+
+    <sc-form-field label="Slug" [required]="true">
+      <input [(ngModel)]="createForm.slug" name="slug" placeholder="ornek-slug" />
+    </sc-form-field>
+
+    <sc-form-field [label]="'product.description' | t">
+      <textarea [(ngModel)]="createForm.description" name="description" rows="3"
+                class="sc-textarea"
+                [placeholder]="'admin.categoryDescPlaceholder' | t"></textarea>
+    </sc-form-field>
+
+    <div class="form-row">
+      <sc-form-field [label]="'admin.displayOrder' | t">
+        <input type="number" [(ngModel)]="createForm.displayOrder" name="displayOrder" min="0" />
+      </sc-form-field>
+
+      <sc-form-field [label]="'admin.imageUrl' | t">
+        <input [(ngModel)]="createForm.imageUrl" name="imageUrl" placeholder="https://..." />
+      </sc-form-field>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn" (click)="showCreateModal.set(false)">
+        {{ 'common.cancel' | t }}
+      </button>
+      <button type="submit" class="btn primary" [disabled]="saving() || !createForm.name || !createForm.slug">
+        {{ 'admin.addCategory' | t }}
+      </button>
+    </div>
+  </form>
+</sc-modal>
+
+<!-- Edit Category Modal -->
+<sc-modal [open]="showEditModal()" [title]="'admin.editCategory' | t" size="lg" (closed)="showEditModal.set(false)">
+  @if (editingCategory()) {
+    <form (ngSubmit)="submitEdit()">
+      <sc-form-field [label]="'admin.parentCategory' | t">
+        <select [(ngModel)]="editForm.parentId" name="editParentId">
+          <option [ngValue]="undefined">{{ 'admin.topLevelCategory' | t }}</option>
+          @for (cat of topLevelCategories(); track cat.id) {
+            @if (cat.id !== editingCategory()!.id) {
+              <option [ngValue]="cat.id">{{ cat.name }}</option>
+            }
+          }
+        </select>
+      </sc-form-field>
+
+      <sc-form-field [label]="'admin.categoryName' | t" [required]="true">
+        <input [(ngModel)]="editForm.name" name="editName" />
+      </sc-form-field>
+
+      <sc-form-field label="Slug" [required]="true">
+        <input [(ngModel)]="editForm.slug" name="editSlug" />
+      </sc-form-field>
+
+      <sc-form-field [label]="'product.description' | t">
+        <textarea [(ngModel)]="editForm.description" name="editDescription" rows="3"
+                  class="sc-textarea"></textarea>
+      </sc-form-field>
+
+      <div class="form-row">
+        <sc-form-field [label]="'admin.displayOrder' | t">
+          <input type="number" [(ngModel)]="editForm.displayOrder" name="editDisplayOrder" min="0" />
+        </sc-form-field>
+
+        <sc-form-field [label]="'admin.imageUrl' | t">
+          <input [(ngModel)]="editForm.imageUrl" name="editImageUrl" placeholder="https://..." />
+        </sc-form-field>
+      </div>
+
+      <sc-form-field label="Durum">
+        <label class="toggle-label">
+          <input type="checkbox" [(ngModel)]="editForm.active" name="editActive" />
+          {{ editForm.active ? 'Aktif' : 'Pasif' }}
+        </label>
+      </sc-form-field>
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="showEditModal.set(false)">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button type="submit" class="btn primary" [disabled]="saving()">
+          {{ 'common.update' | t }}
+        </button>
+      </div>
+    </form>
+  }
+</sc-modal>
+
+<!-- Delete Confirm Dialog -->
+<sc-confirm-dialog
+  [open]="showDeleteConfirm()"
+  [title]="'admin.deleteCategory' | t"
+  [message]="'admin.deleteCategoryConfirm' | t"
+  [confirmLabel]="'common.delete' | t"
+  variant="danger"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()" />

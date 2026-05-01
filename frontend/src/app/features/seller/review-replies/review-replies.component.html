@@ -1,0 +1,72 @@
+<h1>{{ 'seller.reviewReplies' | t }}</h1>
+
+@if (loading()) {
+  <sc-spinner size="lg" [label]="'common.loading' | t" />
+} @else if (replies().length === 0) {
+  <sc-empty-state icon="💬"
+                  [title]="'seller.noReviewsToReply' | t"
+                  description="Musterilerinizin degerlendirmelerine yanitlariniz burada gorunecek." />
+} @else {
+  <div class="reply-list">
+    @for (reply of replies(); track reply.id) {
+      <article class="reply-card">
+        <div class="reply-meta">
+          <span class="review-ref">Degerlendirme #{{ reply.reviewId | slice:0:8 }}</span>
+          <span class="reply-date">{{ reply.createdAt | date: 'mediumDate' }}</span>
+        </div>
+
+        <div class="reply-content">
+          <p>{{ reply.content }}</p>
+        </div>
+
+        @if (reply.updatedAt) {
+          <span class="updated-label">Duzenlendi: {{ reply.updatedAt | date: 'short' }}</span>
+        }
+
+        <div class="reply-actions">
+          <button type="button" class="btn-action" (click)="openEditModal(reply)">
+            {{ 'common.edit' | t }}
+          </button>
+          <button type="button" class="btn-action danger" (click)="openDeleteConfirm(reply)">
+            {{ 'common.delete' | t }}
+          </button>
+        </div>
+      </article>
+    }
+  </div>
+}
+
+<!-- Edit Reply Modal -->
+<sc-modal [open]="showEditModal()"
+          [title]="'seller.editReply' | t"
+          size="base"
+          (closed)="showEditModal.set(false)">
+  <form (ngSubmit)="submitEdit()">
+    <sc-form-field label="Yanit" [required]="true">
+      <textarea rows="5"
+                [ngModel]="editContent()"
+                (ngModelChange)="editContent.set($event)"
+                name="editContent"
+                placeholder="Yanitinizi yazin..."></textarea>
+    </sc-form-field>
+
+    <div class="modal-actions">
+      <button type="button" class="btn" (click)="showEditModal.set(false)">
+        {{ 'common.cancel' | t }}
+      </button>
+      <button type="submit" class="btn primary" [disabled]="saving() || !editContent().trim()">
+        {{ 'common.update' | t }}
+      </button>
+    </div>
+  </form>
+</sc-modal>
+
+<!-- Delete Confirm Dialog -->
+<sc-confirm-dialog
+  [open]="showDeleteConfirm()"
+  [title]="'seller.deleteReply' | t"
+  message="Bu yaniti silmek istediginizden emin misiniz?"
+  [confirmLabel]="'common.delete' | t"
+  variant="danger"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()" />

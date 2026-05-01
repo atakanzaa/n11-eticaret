@@ -1,4 +1,13 @@
-export type ShipmentStatus = 'PENDING' | 'DISPATCHED' | 'IN_TRANSIT' | 'DELIVERED' | 'FAILED';
+export type ShipmentStatus =
+  | 'CREATED'
+  | 'READY_FOR_PICKUP'
+  | 'DISPATCHED'
+  | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'FAILED_DELIVERY'
+  | 'RETURNED_TO_SENDER'
+  | 'CANCELLED';
 
 export interface ShipmentEventResponse {
   id: string;

@@ -1,0 +1,25 @@
+<div class="challenge-container">
+  <div class="challenge-card">
+    <!-- Header -->
+    <div class="challenge-header">
+      <div class="bank-label">3D SECURE DOGRULAMA</div>
+      <h2 class="challenge-title">{{ 'checkout.paymentChallenge' | t }}</h2>
+      <p class="challenge-subtitle">Banka 3D Secure dogrulama ekrani yukleniyor...</p>
+    </div>
+
+    <!-- Loading / Content -->
+    @if (loading()) {
+      <div class="loading-wrap">
+        <sc-spinner size="lg" label="Yukleniyor..." />
+      </div>
+    } @else {
+      <div #host class="challenge-host" [innerHTML]="safeHtml"></div>
+    }
+
+    <!-- Security notice -->
+    <div class="security-notice">
+      <span class="security-icon">&#128274;</span>
+      <span>Bu islem SSL ile korunmaktadir. Kart bilgileriniz guvendedir.</span>
+    </div>
+  </div>
+</div>

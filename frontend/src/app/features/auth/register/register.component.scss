@@ -1,0 +1,55 @@
+.auth-card {
+  background: var(--sc-surface);
+  border-radius: var(--sc-radius-lg);
+  box-shadow: var(--sc-shadow);
+  padding: 32px;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.primary {
+  background: var(--sc-primary);
+  color: white;
+  border: 0;
+  padding: 14px;
+  border-radius: var(--sc-radius);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 0;
+  color: var(--sc-danger);
+  font-size: 13px;
+}
+
+.muted {
+  margin: 0;
+  color: var(--sc-text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+a {
+  color: var(--sc-primary);
+  text-decoration: none;
+}

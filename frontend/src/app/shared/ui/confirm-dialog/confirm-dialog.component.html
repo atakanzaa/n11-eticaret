@@ -1,0 +1,15 @@
+<sc-modal [open]="open()" [title]="title()" size="sm" (closed)="cancelled.emit()">
+  @if (message()) {
+    <p class="message">{{ message() }}</p>
+  }
+
+  <div modal-footer class="actions">
+    <button class="sc-btn sc-btn-ghost" (click)="cancelled.emit()">{{ cancelLabel() }}</button>
+    <button
+      class="sc-btn"
+      [class.sc-btn-primary]="variant() === 'primary'"
+      [class.sc-btn-danger]="variant() === 'danger'"
+      (click)="confirmed.emit()"
+    >{{ confirmLabel() }}</button>
+  </div>
+</sc-modal>

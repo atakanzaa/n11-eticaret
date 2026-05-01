@@ -1,0 +1,91 @@
+<div class="sc-container">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="slide" [style.background]="slides[heroIdx()].bg">
+      <div class="slide-inner">
+        <span class="kicker">{{ slides[heroIdx()].kicker }}</span>
+        <h1>{{ slides[heroIdx()].title }}</h1>
+        <p>{{ slides[heroIdx()].sub }}</p>
+        <a class="sc-btn sc-btn-dark sc-btn-lg" [routerLink]="slides[heroIdx()].link">Hemen kesfet</a>
+      </div>
+      <div class="slide-art">{{ slides[heroIdx()].art }}</div>
+    </div>
+    <div class="dots">
+      @for (s of slides; track $index) {
+        <button [class.active]="$index === heroIdx()" (click)="heroIdx.set($index)"></button>
+      }
+    </div>
+  </section>
+
+  <!-- LOADING STATE -->
+  @if (loading()) {
+    <div class="loading-container">
+      <sc-spinner size="lg" label="Yukleniyor..." />
+    </div>
+  } @else {
+    <!-- CATEGORIES TILE GRID -->
+    @if (categories().length > 0) {
+      <section class="cats">
+        <h2>Kategorilere goz at</h2>
+        <div class="cat-grid">
+          @for (c of categories(); track c.id) {
+            <a class="cat-tile" [routerLink]="['/kategori', c.slug]" [style.background]="catTint($index)">
+              <span class="cat-name">{{ c.name }}</span>
+              <span class="cat-count">{{ c.productCount }} urun</span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- FEATURED PRODUCTS -->
+    <section class="rail-section">
+      <div class="rh">
+        <h2>One Cikan Urunler</h2>
+        <a routerLink="/arama">Tumunu gor</a>
+      </div>
+      @if (featured().length > 0) {
+        <div class="rail">
+          @for (item of featured(); track item.product.id) {
+            <sc-product-card [product]="item.product" [offer]="item.offer" />
+          }
+        </div>
+      } @else {
+        <sc-empty-state
+          icon="package"
+          title="Henuz urun yok"
+          description="Yakinda yeni urunler eklenecek." />
+      }
+    </section>
+
+    <!-- PERSONALIZED -->
+    @if (personalized().length > 0) {
+      <section class="rail-section">
+        <div class="rh">
+          <h2>Sana ozel oneriler</h2>
+          <a routerLink="/arama">Tumunu gor</a>
+        </div>
+        <div class="rail">
+          @for (item of personalized(); track item.product.id) {
+            <sc-product-card [product]="item.product" [offer]="item.offer" />
+          }
+        </div>
+      </section>
+    }
+
+    <!-- BEST SELLERS -->
+    @if (bestSellers().length > 0) {
+      <section class="rail-section">
+        <div class="rh">
+          <h2>Cok satanlar</h2>
+          <a routerLink="/arama">Tumunu gor</a>
+        </div>
+        <div class="rail">
+          @for (item of bestSellers(); track item.product.id) {
+            <sc-product-card [product]="item.product" [offer]="item.offer" />
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

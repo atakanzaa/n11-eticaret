@@ -1,0 +1,130 @@
+<div class="header">
+  <h1>{{ 'admin.promotions' | t }}</h1>
+  <button type="button" class="btn-primary" (click)="showCreateModal.set(true)">
+    + Yeni Kupon
+  </button>
+</div>
+
+@if (loading()) {
+  <sc-spinner size="lg" label="Yukleniyor..." />
+} @else if (coupons().length === 0) {
+  <sc-empty-state
+    icon="tag"
+    title="Kupon bulunamadi"
+    description="Henuz kupon olusturulmamis." />
+} @else {
+  <table>
+    <thead>
+      <tr>
+        <th>Kod</th>
+        <th>Ad</th>
+        <th>Tip</th>
+        <th>Deger</th>
+        <th>Gecerli</th>
+        <th>Kullanim</th>
+        <th>Durum</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of coupons(); track c.id) {
+        <tr>
+          <td><code>{{ c.code }}</code></td>
+          <td>{{ c.name }}</td>
+          <td>{{ c.discountType }}</td>
+          <td>{{ formatValue(c) }}</td>
+          <td>
+            <span class="muted">{{ c.validFrom | date: 'shortDate' }} &rarr;</span>
+            <br />
+            <span class="muted">{{ c.validUntil | date: 'shortDate' }}</span>
+          </td>
+          <td>{{ c.timesUsed }} / {{ c.totalUsageLimit ?? '&infin;' }}</td>
+          <td>
+            @if (c.active) {
+              <sc-status-badge label="Aktif" variant="success" />
+            } @else {
+              <sc-status-badge label="Pasif" variant="neutral" />
+            }
+          </td>
+          <td>
+            @if (c.active) {
+              <button type="button" class="btn-deactivate" (click)="confirmDeactivate(c.id)">Kapat</button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+<!-- Deactivation Confirm Dialog -->
+<sc-confirm-dialog
+  [open]="deactivateDialogOpen()"
+  title="Kuponu Kapat"
+  message="Bu kuponu kapatmak istediginize emin misiniz?"
+  confirmLabel="Kapat"
+  variant="danger"
+  (confirmed)="onDeactivateConfirmed()"
+  (cancelled)="deactivateDialogOpen.set(false)" />
+
+<!-- Create Coupon Modal -->
+<sc-modal
+  [open]="showCreateModal()"
+  title="Yeni Kupon Olustur"
+  size="lg"
+  (closed)="showCreateModal.set(false)">
+  <form (ngSubmit)="createCoupon()" class="coupon-form">
+    <sc-form-field label="Kupon Kodu" [required]="true">
+      <input type="text" [(ngModel)]="newCoupon.code" name="code" required placeholder="YILBASI2026" />
+    </sc-form-field>
+
+    <sc-form-field label="Ad" [required]="true">
+      <input type="text" [(ngModel)]="newCoupon.name" name="name" required placeholder="Yilbasi Indirimi" />
+    </sc-form-field>
+
+    <sc-form-field label="Indirim Tipi" [required]="true">
+      <select [(ngModel)]="newCoupon.discountType" name="discountType" required>
+        <option value="PERCENTAGE">Yuzde</option>
+        <option value="FIXED_AMOUNT">Sabit Tutar</option>
+        <option value="FREE_SHIPPING">Ucretsiz Kargo</option>
+      </select>
+    </sc-form-field>
+
+    <sc-form-field label="Indirim Degeri" [required]="true">
+      <input type="number" [(ngModel)]="newCoupon.discountValue" name="discountValue" required min="0" />
+    </sc-form-field>
+
+    <div class="form-row">
+      <sc-form-field label="Gecerlilik Baslangici" [required]="true">
+        <input type="date" [(ngModel)]="newCoupon.validFrom" name="validFrom" required />
+      </sc-form-field>
+
+      <sc-form-field label="Gecerlilik Bitisi" [required]="true">
+        <input type="date" [(ngModel)]="newCoupon.validUntil" name="validUntil" required />
+      </sc-form-field>
+    </div>
+
+    <sc-form-field label="Toplam Kullanim Limiti">
+      <input type="number" [(ngModel)]="newCoupon.totalUsageLimit" name="totalUsageLimit" min="1" />
+    </sc-form-field>
+
+    <sc-form-field label="Kullanici Basi Limit">
+      <input type="number" [(ngModel)]="newCoupon.perUserLimit" name="perUserLimit" min="1" />
+    </sc-form-field>
+
+    <sc-form-field label="Minimum Siparis Tutari">
+      <input type="number" [(ngModel)]="newCoupon.minimumOrderAmount" name="minimumOrderAmount" min="0" />
+    </sc-form-field>
+
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" (click)="showCreateModal.set(false)">Vazgec</button>
+      <button type="submit" class="btn-primary" [disabled]="creating()">
+        @if (creating()) {
+          Olusturuluyor...
+        } @else {
+          Olustur
+        }
+      </button>
+    </div>
+  </form>
+</sc-modal>

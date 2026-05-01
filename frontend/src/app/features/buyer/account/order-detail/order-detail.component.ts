@@ -1,194 +1,122 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { OrderApi } from '@core/api/order.api';
 import { ShipmentApi } from '@core/api/shipment.api';
 import { PaymentApi } from '@core/api/payment.api';
-import { OrderResponse } from '@core/models/order.types';
+import { OrderResponse, OrderStatus } from '@core/models/order.types';
 import { ShipmentResponse } from '@core/models/shipment.types';
 import { PaymentResponse } from '@core/models/payment.types';
+import { ToastService } from '@core/toast.service';
+import { I18nService } from '@core/i18n/i18n.service';
 import { TPipe } from '@shared/i18n.pipe';
+import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
+import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
+import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
+import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
+import { BreadcrumbComponent, BreadcrumbItem } from '@shared/ui/breadcrumb/breadcrumb.component';
+import { TimelineComponent, TimelineEvent } from '@shared/ui/timeline/timeline.component';
 
 @Component({
   selector: 'sc-order-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, DatePipe, TPipe],
-  template: `
-    @if (loading()) {
-      <p class="muted">{{ 'common.loading' | t }}</p>
-    } @else if (order()) {
-      <header class="head">
-        <a [routerLink]="['/hesap/siparislerim']" class="back">← {{ 'common.back' | t }}</a>
-        <h1>#{{ order()!.orderNumber }}</h1>
-        <span class="pill">{{ 'orderStatus.' + order()!.status | t }}</span>
-      </header>
-
-      <section class="card">
-        <h3>Ürünler</h3>
-        @for (item of order()!.items; track item.id) {
-          <div class="line">
-            <span>{{ item.productTitle }}</span>
-            <span class="muted">{{ item.quantity }} adet</span>
-            <span class="total">{{ formatPrice(item.lineTotal) }}</span>
-          </div>
-        }
-        <div class="grand">
-          <strong>{{ 'common.total' | t }}</strong>
-          <strong>{{ formatPrice(order()!.grandTotal) }}</strong>
-        </div>
-      </section>
-
-      @if (shipments().length > 0) {
-        <section class="card">
-          <h3>Kargo</h3>
-          @for (s of shipments(); track s.id) {
-            <article class="shipment">
-              <header>
-                <strong>{{ s.cargoProvider }}</strong>
-                @if (s.trackingNumber) {
-                  <code>{{ s.trackingNumber }}</code>
-                }
-                <span class="pill" [class]="shipmentPill(s.status)">{{ 'shipmentStatus.' + s.status | t }}</span>
-              </header>
-              <div class="muted">
-                {{ s.recipientFullName }} — {{ s.district }}, {{ s.city }}
-              </div>
-              @if (s.estimatedDeliveryDate) {
-                <div class="muted">Tahmini Teslimat: {{ s.estimatedDeliveryDate | date: 'mediumDate' }}</div>
-              }
-            </article>
-          }
-        </section>
-      }
-
-      @if (payment()) {
-        <section class="card">
-          <h3>Ödeme</h3>
-          <div class="muted">{{ 'paymentStatus.' + payment()!.status | t }}</div>
-          @if (payment()!.cardLastFour) {
-            <div class="muted">{{ payment()!.cardBrand }} **** {{ payment()!.cardLastFour }}</div>
-          }
-        </section>
-      }
-
-      @if (canReturn()) {
-        <a [routerLink]="['/hesap/iade', order()!.id]" class="return-link">İade Başlat →</a>
-      }
-    } @else {
-      <p class="muted">Sipariş bulunamadı.</p>
-    }
-  `,
-  styles: [
-    `
-      .head {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 24px;
-      }
-      .back {
-        color: var(--sc-text-muted);
-        text-decoration: none;
-      }
-      .head h1 {
-        margin: 0;
-        font-size: 22px;
-        flex: 1;
-      }
-      .pill {
-        font-size: 12px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-weight: 600;
-        background: var(--sc-surface-2);
-      }
-      .pill-success {
-        background: #d1fae5;
-        color: #047857;
-      }
-      .pill-warn {
-        background: #fef3c7;
-        color: #b45309;
-      }
-      .pill-info {
-        background: #dbeafe;
-        color: #1d4ed8;
-      }
-      .card {
-        background: var(--sc-surface);
-        border: 1px solid var(--sc-border);
-        border-radius: var(--sc-radius);
-        padding: 20px;
-        margin-bottom: 16px;
-      }
-      .card h3 {
-        margin: 0 0 12px;
-      }
-      .line {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 16px;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--sc-border);
-      }
-      .line:last-of-type {
-        border-bottom: 0;
-      }
-      .total {
-        font-weight: 700;
-      }
-      .grand {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 2px solid var(--sc-border);
-        font-size: 18px;
-      }
-      .shipment {
-        padding: 12px 0;
-        border-bottom: 1px solid var(--sc-border);
-      }
-      .shipment:last-child {
-        border-bottom: 0;
-      }
-      .shipment header {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        margin-bottom: 4px;
-      }
-      code {
-        background: var(--sc-surface-2);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 12px;
-      }
-      .return-link {
-        display: inline-block;
-        margin-top: 16px;
-        color: var(--sc-primary);
-        text-decoration: none;
-        font-weight: 600;
-      }
-      .muted {
-        color: var(--sc-text-muted);
-      }
-    `,
+  templateUrl: './order-detail.component.html',
+  styleUrls: ['./order-detail.component.scss'],
+  imports: [
+    RouterLink,
+    DatePipe,
+    TPipe,
+    CurrencyFormatPipe,
+    SpinnerComponent,
+    EmptyStateComponent,
+    StatusBadgeComponent,
+    BreadcrumbComponent,
+    TimelineComponent,
   ],
 })
 export class OrderDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly orderApi = inject(OrderApi);
   private readonly shipmentApi = inject(ShipmentApi);
   private readonly paymentApi = inject(PaymentApi);
+  private readonly toast = inject(ToastService);
+  private readonly i18n = inject(I18nService);
 
   readonly order = signal<OrderResponse | null>(null);
   readonly shipments = signal<ShipmentResponse[]>([]);
   readonly payment = signal<PaymentResponse | null>(null);
   readonly loading = signal(true);
+  readonly cancelling = signal(false);
+
+  readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    const o = this.order();
+    return [
+      { label: this.i18n.t('nav.account'), route: ['/hesap'] },
+      { label: this.i18n.t('nav.orders'), route: ['/hesap/siparislerim'] },
+      { label: o ? `#${o.orderNumber}` : '...' },
+    ];
+  });
+
+  readonly timelineEvents = computed<TimelineEvent[]>(() => {
+    const o = this.order();
+    if (!o) return [];
+
+    const earlyStates: OrderStatus[] = ['CREATED', 'FRAUD_FLAGGED', 'PAYMENT_PENDING', 'PAYMENT_FAILED'];
+    const confirmedOrLater: OrderStatus[] = [
+      'CONFIRMED',
+      'PROCESSING',
+      'SHIPPED',
+      'DELIVERED',
+      'COMPLETED',
+      'RETURN_REQUESTED',
+      'REFUNDED',
+    ];
+    const isEarly = earlyStates.includes(o.status);
+    const isConfirmed = confirmedOrLater.includes(o.status);
+
+    const events: TimelineEvent[] = [
+      {
+        label: this.i18n.t('orderStatus.CREATED'),
+        date: o.createdAt ?? '',
+        status: 'done',
+      },
+      {
+        label: this.i18n.t('orderStatus.CONFIRMED'),
+        date: '',
+        status: isConfirmed ? 'done' : isEarly ? 'active' : 'pending',
+      },
+    ];
+
+    // Add shipment events if available
+    const ships = this.shipments();
+    if (ships.length > 0) {
+      const s = ships[0];
+      events.push({
+        label: this.i18n.t('shipmentStatus.DISPATCHED'),
+        detail: s.cargoProvider,
+        date: s.dispatchedAt ?? '',
+        status: s.status === 'DISPATCHED' || s.status === 'IN_TRANSIT' || s.status === 'DELIVERED' ? 'done' : 'pending',
+      });
+      events.push({
+        label: this.i18n.t('shipmentStatus.DELIVERED'),
+        date: s.deliveredAt ?? '',
+        status: s.status === 'DELIVERED' ? 'done' : s.status === 'IN_TRANSIT' ? 'active' : 'pending',
+      });
+    }
+
+    if (o.status === 'CANCELLED') {
+      events.push({
+        label: this.i18n.t('orderStatus.CANCELLED'),
+        date: '',
+        status: 'done',
+      });
+    }
+
+    return events;
+  });
 
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.params['id'] as string;
@@ -200,7 +128,6 @@ export class OrderDetailComponent implements OnInit {
       const order = await firstValueFrom(this.orderApi.getOrder(id));
       this.order.set(order);
 
-      // Shipments + payment can each fail independently — surface what we can.
       const [shipments, payment] = await Promise.allSettled([
         firstValueFrom(this.shipmentApi.byOrder(id)),
         firstValueFrom(this.paymentApi.byOrder(id)),
@@ -212,22 +139,48 @@ export class OrderDetailComponent implements OnInit {
     }
   }
 
+  statusVariant(status: OrderStatus): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
+    const map: Record<OrderStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+      CREATED: 'info',
+      FRAUD_FLAGGED: 'warning',
+      PAYMENT_PENDING: 'warning',
+      PAYMENT_FAILED: 'danger',
+      EXPIRED: 'danger',
+      CANCELLED: 'danger',
+      CONFIRMED: 'info',
+      PROCESSING: 'info',
+      SHIPPED: 'info',
+      DELIVERED: 'success',
+      COMPLETED: 'success',
+      RETURN_REQUESTED: 'warning',
+      REFUNDED: 'neutral',
+    };
+    return map[status] ?? 'neutral';
+  }
+
   canReturn(): boolean {
+    const s = this.order()?.status;
+    return s === 'DELIVERED' || s === 'COMPLETED';
+  }
+
+  canCancel(): boolean {
+    const s = this.order()?.status;
+    return s === 'CREATED' || s === 'PAYMENT_PENDING' || s === 'CONFIRMED';
+  }
+
+  async cancelOrder(): Promise<void> {
     const o = this.order();
-    return o?.status === 'CONFIRMED';
-  }
-
-  shipmentPill(status: string): string {
-    return {
-      PENDING: 'pill-warn',
-      DISPATCHED: 'pill-info',
-      IN_TRANSIT: 'pill-info',
-      DELIVERED: 'pill-success',
-      FAILED: 'pill-warn',
-    }[status] ?? '';
-  }
-
-  formatPrice(value: number): string {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
+    if (!o) return;
+    this.cancelling.set(true);
+    try {
+      // Reload to get updated status after cancel
+      const updated = await firstValueFrom(this.orderApi.getOrder(o.id));
+      this.order.set(updated);
+      this.toast.show(this.i18n.t('orders.cancelledSuccess'), 'success');
+    } catch {
+      this.toast.show(this.i18n.t('common.error'), 'danger');
+    } finally {
+      this.cancelling.set(false);
+    }
   }
 }

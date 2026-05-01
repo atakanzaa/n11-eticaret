@@ -1,0 +1,15 @@
+<div class="stepper">
+  <button
+    type="button"
+    (click)="decrement()"
+    [disabled]="disabled() || value() <= min()"
+    aria-label="Azalt"
+  >−</button>
+  <span class="count" aria-live="polite">{{ value() }}</span>
+  <button
+    type="button"
+    (click)="increment()"
+    [disabled]="disabled() || value() >= max()"
+    aria-label="Artir"
+  >+</button>
+</div>

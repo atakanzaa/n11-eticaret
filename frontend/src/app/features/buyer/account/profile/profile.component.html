@@ -1,0 +1,157 @@
+<h2>{{ 'nav.profile' | t }}</h2>
+
+@if (loading()) {
+  <sc-spinner size="lg" [label]="'common.loading' | t" />
+} @else if (profile()) {
+  <!-- Personal Info -->
+  <section class="card">
+    <h3>{{ 'account.personalInfo' | t }}</h3>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="row">
+        <sc-form-field [label]="'auth.firstName' | t" [required]="true">
+          <input formControlName="firstName" />
+        </sc-form-field>
+        <sc-form-field [label]="'auth.lastName' | t" [required]="true">
+          <input formControlName="lastName" />
+        </sc-form-field>
+      </div>
+      <sc-form-field [label]="'auth.phone' | t">
+        <input formControlName="phone" />
+      </sc-form-field>
+      <button type="submit" class="btn primary" [disabled]="saving()">
+        {{ 'common.save' | t }}
+      </button>
+    </form>
+  </section>
+
+  <!-- Change Password -->
+  <section class="card">
+    <h3>{{ 'account.changePassword' | t }}</h3>
+    <form (ngSubmit)="submitPasswordChange()" novalidate>
+      <sc-form-field [label]="'account.currentPassword' | t" [required]="true">
+        <input type="password" autocomplete="current-password"
+               [value]="currentPassword()"
+               (input)="currentPassword.set($any($event.target).value)" />
+      </sc-form-field>
+      <div class="row">
+        <sc-form-field [label]="'account.newPassword' | t" [required]="true">
+          <input type="password" autocomplete="new-password"
+                 [value]="newPassword()"
+                 (input)="newPassword.set($any($event.target).value)" />
+        </sc-form-field>
+        <sc-form-field [label]="'account.confirmPassword' | t" [required]="true">
+          <input type="password" autocomplete="new-password"
+                 [value]="confirmPassword()"
+                 (input)="confirmPassword.set($any($event.target).value)" />
+        </sc-form-field>
+      </div>
+      @if (passwordError()) {
+        <p class="error" role="alert">{{ passwordError() }}</p>
+      }
+      <button type="submit" class="btn primary"
+              [disabled]="savingPassword() || !currentPassword() || !newPassword() || newPassword() !== confirmPassword()">
+        @if (savingPassword()) {
+          <sc-spinner size="sm" />
+        } @else {
+          {{ 'account.changePassword' | t }}
+        }
+      </button>
+    </form>
+  </section>
+
+  <!-- Addresses -->
+  <section class="card">
+    <div class="section-header">
+      <h3>{{ 'account.myAddresses' | t }}</h3>
+      <button type="button" class="btn primary-outline" (click)="openAddressModal()">
+        {{ 'account.addAddress' | t }}
+      </button>
+    </div>
+
+    @if (addresses().length === 0) {
+      <sc-empty-state icon="📍"
+                      [title]="'account.noAddresses' | t"
+                      [description]="'account.addAddress' | t" />
+    } @else {
+      <div class="address-grid">
+        @for (a of addresses(); track a.id) {
+          <sc-address-card
+            [label]="a.label"
+            [fullName]="a.fullName"
+            [phone]="a.phone"
+            [address]="a.fullAddress"
+            [district]="a.district"
+            [city]="a.city"
+            [selected]="a.defaultShipping"
+            (edit)="openEditAddressModal(a)"
+            (delete)="openDeleteAddressConfirm(a)" />
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Address Add/Edit Modal -->
+  <sc-modal [open]="showAddressModal()"
+            [title]="editingAddress() ? ('account.editAddress' | t) : ('account.addAddress' | t)"
+            size="lg"
+            (closed)="showAddressModal.set(false)">
+    <form (submit)="$event.preventDefault()">
+      <div class="row">
+        <sc-form-field [label]="'account.addressTitle' | t" [required]="true">
+          <input [value]="addressForm().label"
+                 (input)="updateAddressForm('label', $any($event.target).value)" />
+        </sc-form-field>
+        <sc-form-field [label]="'account.fullName' | t" [required]="true">
+          <input [value]="addressForm().fullName"
+                 (input)="updateAddressForm('fullName', $any($event.target).value)" />
+        </sc-form-field>
+      </div>
+      <sc-form-field [label]="'account.phoneNumber' | t" [required]="true">
+        <input [value]="addressForm().phone"
+               (input)="updateAddressForm('phone', $any($event.target).value)" />
+      </sc-form-field>
+      <div class="row">
+        <sc-form-field [label]="'account.city' | t" [required]="true">
+          <input [value]="addressForm().city"
+                 (input)="updateAddressForm('city', $any($event.target).value)" />
+        </sc-form-field>
+        <sc-form-field [label]="'account.district' | t" [required]="true">
+          <input [value]="addressForm().district"
+                 (input)="updateAddressForm('district', $any($event.target).value)" />
+        </sc-form-field>
+      </div>
+      <sc-form-field [label]="'account.addressLine' | t" [required]="true">
+        <textarea rows="3" [value]="addressForm().fullAddress"
+                  (input)="updateAddressForm('fullAddress', $any($event.target).value)"></textarea>
+      </sc-form-field>
+      <div class="row">
+        <sc-form-field [label]="'account.postalCode' | t">
+          <input [value]="addressForm().postalCode ?? ''"
+                 (input)="updateAddressForm('postalCode', $any($event.target).value)" />
+        </sc-form-field>
+        <sc-form-field label="Mahalle">
+          <input [value]="addressForm().neighborhood ?? ''"
+                 (input)="updateAddressForm('neighborhood', $any($event.target).value)" />
+        </sc-form-field>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="showAddressModal.set(false)">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button type="button" class="btn primary" [disabled]="savingAddress()" (click)="submitAddress()">
+          {{ editingAddress() ? ('common.update' | t) : ('common.add' | t) }}
+        </button>
+      </div>
+    </form>
+  </sc-modal>
+
+  <!-- Delete Address Confirm -->
+  <sc-confirm-dialog
+    [open]="showDeleteAddressConfirm()"
+    [title]="'common.confirm' | t"
+    [message]="'account.deleteAccountConfirm' | t"
+    [confirmLabel]="'common.delete' | t"
+    variant="danger"
+    (confirmed)="confirmDeleteAddress()"
+    (cancelled)="showDeleteAddressConfirm.set(false)" />
+}

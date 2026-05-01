@@ -1,0 +1,69 @@
+<h2>{{ 'nav.orders' | t }}</h2>
+
+@if (orders.loading()) {
+  <div class="spinner-wrap">
+    <sc-spinner size="lg" [label]="'common.loading' | t" />
+  </div>
+} @else if (orders.orders().length === 0) {
+  <sc-empty-state
+    icon="package"
+    [title]="'common.empty' | t"
+    [description]="'orders.emptyDescription' | t"
+  />
+} @else {
+  <div class="list">
+    @for (o of orders.orders(); track o.id) {
+      <a class="ord" [routerLink]="['/hesap/siparis', o.id]">
+        <div class="head">
+          <div>
+            <div class="num">#{{ o.orderNumber }}</div>
+            <div class="date">{{ o.createdAt | date: 'd MMMM y, HH:mm' : '' : 'tr-TR' }}</div>
+          </div>
+          <sc-status-badge
+            [label]="('orderStatus.' + o.status) | t"
+            [variant]="statusVariant(o.status)"
+          />
+        </div>
+
+        <div class="body">
+          @for (item of o.items; track item.id) {
+            <div class="line">
+              <div class="thumb">
+                @if (item.productImageUrl) {
+                  <img [src]="item.productImageUrl" [alt]="item.productTitle" />
+                } @else {
+                  <div class="thumb-placeholder"></div>
+                }
+              </div>
+              <div class="info">
+                <div class="ttl">{{ item.productTitle }}</div>
+                <div class="meta">{{ item.quantity }} {{ 'common.piece' | t }}</div>
+              </div>
+              <div class="price">{{ item.lineTotal | scCurrency }}</div>
+            </div>
+          }
+        </div>
+
+        <div class="foot">
+          <div class="total">
+            <span>{{ 'common.total' | t }}</span>
+            <strong>{{ o.grandTotal | scCurrency }}</strong>
+          </div>
+          <span class="detail-link">{{ 'common.detail' | t }} &rarr;</span>
+        </div>
+      </a>
+    }
+  </div>
+
+  @if (pageData(); as pg) {
+    @if (pg.totalPages > 1) {
+      <sc-pagination
+        [currentPage]="pg.number"
+        [totalPages]="pg.totalPages"
+        [isFirst]="pg.first"
+        [isLast]="pg.last"
+        (pageChange)="onPageChange($event)"
+      />
+    }
+  }
+}

@@ -1,0 +1,17 @@
+:host { display: block; }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.current {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sc-text-muted);
+  min-width: 60px;
+  text-align: center;
+}

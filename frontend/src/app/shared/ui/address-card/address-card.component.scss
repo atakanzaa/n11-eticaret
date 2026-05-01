@@ -1,0 +1,53 @@
+:host { display: block; }
+
+.card {
+  padding: 16px;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  background: var(--sc-surface);
+  transition: border-color 120ms;
+
+  &.selectable { cursor: pointer; }
+  &.selectable:hover { border-color: var(--sc-primary); }
+  &.selected {
+    border-color: var(--sc-primary);
+    background: var(--sc-primary-50);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+
+  strong { font-size: 14px; }
+  .name { font-size: 13px; color: var(--sc-text-muted); }
+}
+
+.body {
+  font-size: 13px;
+  color: var(--sc-text-muted);
+  line-height: 1.5;
+}
+
+.phone { color: var(--sc-text-faint); }
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.action {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sc-primary);
+  cursor: pointer;
+  padding: 0;
+
+  &:hover { text-decoration: underline; }
+  &.danger { color: var(--sc-danger); }
+}

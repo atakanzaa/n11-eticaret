@@ -1,0 +1,88 @@
+// ─── Container ──────────────────────────────────────
+.challenge-container {
+  display: flex;
+  justify-content: center;
+  padding: 48px 24px;
+  min-height: 60vh;
+}
+
+// ─── Card ───────────────────────────────────────────
+.challenge-card {
+  max-width: 720px;
+  width: 100%;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg, 12px);
+  padding: 40px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+// ─── Header ─────────────────────────────────────────
+.challenge-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.bank-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sc-text-faint, var(--sc-text-muted));
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+}
+
+.challenge-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.challenge-subtitle {
+  font-size: 14px;
+  color: var(--sc-text-muted);
+  margin: 0;
+}
+
+// ─── Loading ────────────────────────────────────────
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+// ─── 3DS content host ───────────────────────────────
+.challenge-host {
+  margin: 24px 0;
+  min-height: 200px;
+  border-radius: var(--sc-radius);
+  overflow: hidden;
+}
+
+// ─── Security notice ────────────────────────────────
+.security-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+  font-size: 12px;
+  color: var(--sc-text-muted);
+  margin-top: 24px;
+}
+
+.security-icon {
+  font-size: 16px;
+}
+
+// ─── Responsive ─────────────────────────────────────
+@media (max-width: 640px) {
+  .challenge-container {
+    padding: 24px 16px;
+  }
+
+  .challenge-card {
+    padding: 24px;
+  }
+}

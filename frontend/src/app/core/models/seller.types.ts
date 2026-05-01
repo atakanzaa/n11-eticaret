@@ -1,4 +1,4 @@
-export type SellerStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+export type SellerStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REJECTED';
 
 export interface SellerDto {
   id: string;

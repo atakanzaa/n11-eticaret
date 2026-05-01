@@ -1,0 +1,69 @@
+<header class="hdr">
+  <div class="top sc-container">
+    <a routerLink="/" class="logo">
+      <span class="mark"></span>
+      <span class="word">SmartCommerce</span>
+    </a>
+
+    <div class="search-wrap">
+      <input
+        class="search"
+        type="text"
+        placeholder="Urun, marka veya kategori ara..."
+        [(ngModel)]="searchQuery"
+        (keydown.enter)="onSearch($event)"
+        (keydown.escape)="searchOpen.set(false)"
+        (focus)="searchOpen.set(true)"
+        autocomplete="off"
+      />
+      <button class="search-btn" (click)="onSearch($event)" aria-label="Ara">&#x2315;</button>
+    </div>
+
+    <div class="actions">
+      @if (auth.isAuthenticated()) {
+        @if (!isSeller() && !isAdmin()) {
+          <a routerLink="/satici-ol" class="sc-btn sc-btn-outline sc-btn-sm become-seller-btn">
+            Satici Ol
+          </a>
+        }
+        <a routerLink="/sepet" class="action cart">
+          <span class="ico">&#x2B2C;</span>
+          <span class="lbl">Sepet</span>
+          @if (cart.itemCount() > 0) {
+            <span class="badge">{{ cart.itemCount() }}</span>
+          }
+        </a>
+        <details class="user-menu">
+          <summary class="action">
+            <span class="ico">&#x25CB;</span>
+            <span class="lbl">{{ auth.currentUser()?.firstName ?? 'Hesabim' }}</span>
+          </summary>
+          <div class="dropdown-menu">
+            <a routerLink="/hesap/profil" class="menu-item">Profilim</a>
+            <a routerLink="/hesap/siparislerim" class="menu-item">Siparislerim</a>
+            @if (isSeller()) {
+              <a routerLink="/satici" class="menu-item">Satici Paneli</a>
+            }
+            @if (isAdmin()) {
+              <a routerLink="/admin" class="menu-item">Admin Paneli</a>
+            }
+            <button type="button" class="menu-item logout" (click)="onLogout()">Cikis Yap</button>
+          </div>
+        </details>
+      } @else {
+        <a routerLink="/giris" class="action">
+          <span class="lbl">Giris Yap</span>
+        </a>
+        <a routerLink="/kayit" class="sc-btn sc-btn-primary sc-btn-sm">Kayit Ol</a>
+      }
+    </div>
+  </div>
+
+  <nav class="catnav sc-container">
+    @for (c of categories(); track c.id) {
+      <a [routerLink]="['/kategori', c.slug]" routerLinkActive="active" class="cat">
+        <span>{{ c.name }}</span>
+      </a>
+    }
+  </nav>
+</header>

@@ -1,0 +1,147 @@
+@if (loading()) {
+  <div class="spinner-wrap">
+    <sc-spinner size="lg" [label]="'common.loading' | t" />
+  </div>
+} @else if (order()) {
+  <sc-breadcrumb [items]="breadcrumbs()" />
+
+  <div class="page-header">
+    <div class="header-left">
+      <h2>{{ 'orders.orderPrefix' | t }} #{{ order()!.orderNumber }}</h2>
+      <span class="order-date">{{ order()!.createdAt | date: 'd MMMM y, HH:mm' : '' : 'tr-TR' }}</span>
+    </div>
+    <sc-status-badge
+      [label]="('orderStatus.' + order()!.status) | t"
+      [variant]="statusVariant(order()!.status)"
+    />
+  </div>
+
+  <div class="grid">
+    <div class="main-col">
+      <!-- Timeline / Shipment tracking -->
+      @if (timelineEvents().length > 0) {
+        <section class="card">
+          <h3>{{ 'orders.orderStatus' | t }}</h3>
+          <sc-timeline [events]="timelineEvents()" />
+
+          @if (shipments().length > 0) {
+            @for (s of shipments(); track s.id) {
+              <div class="cargo">
+                <div class="cargo-info">
+                  <span>{{ 'orders.cargo' | t }}: <strong>{{ s.cargoProvider }}</strong></span>
+                  @if (s.trackingNumber) {
+                    <code>{{ s.trackingNumber }}</code>
+                  }
+                </div>
+                @if (s.trackingUrl) {
+                  <a [href]="s.trackingUrl" target="_blank" rel="noopener" class="cargo-link">
+                    {{ 'orders.trackCargo' | t }} &rarr;
+                  </a>
+                }
+                @if (s.estimatedDeliveryDate) {
+                  <div class="cargo-eta">
+                    {{ 'orders.estimatedDelivery' | t }}: {{ s.estimatedDeliveryDate | date: 'd MMMM y' : '' : 'tr-TR' }}
+                  </div>
+                }
+              </div>
+            }
+          }
+        </section>
+      }
+
+      <!-- Order items -->
+      <section class="card">
+        <h3>{{ 'orders.products' | t }}</h3>
+        @for (item of order()!.items; track item.id) {
+          <div class="ln">
+            <div class="thumb">
+              @if (item.productImageUrl) {
+                <img [src]="item.productImageUrl" [alt]="item.productTitle" />
+              } @else {
+                <div class="thumb-placeholder"></div>
+              }
+            </div>
+            <div class="item-info">
+              <div class="item-title">{{ item.productTitle }}</div>
+              <div class="item-meta">{{ item.quantity }} {{ 'common.piece' | t }}</div>
+              @if (item.sellerName) {
+                <div class="item-seller">{{ item.sellerName }}</div>
+              }
+            </div>
+            <div class="item-price">{{ item.lineTotal | scCurrency }}</div>
+          </div>
+        }
+      </section>
+
+      <!-- Action buttons -->
+      <div class="actions">
+        @if (canReturn()) {
+          <a [routerLink]="['/hesap/iade', order()!.id]" class="btn btn-return">
+            &#8617; {{ 'orders.startReturn' | t }}
+          </a>
+        }
+        @if (canCancel()) {
+          <button type="button" class="btn btn-cancel" (click)="cancelOrder()" [disabled]="cancelling()">
+            @if (cancelling()) {
+              <sc-spinner size="sm" />
+            } @else {
+              {{ 'orders.cancelOrder' | t }}
+            }
+          </button>
+        }
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <!-- Shipping address -->
+      @if (shipments().length > 0) {
+        <section class="card">
+          <h3>{{ 'orders.shippingAddress' | t }}</h3>
+          @for (s of shipments(); track s.id) {
+            <div class="addr">
+              <strong>{{ s.recipientFullName }}</strong>
+              <p>{{ s.district }}/{{ s.city }}</p>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- Payment info -->
+      @if (payment(); as pay) {
+        <section class="card">
+          <h3>{{ 'orders.payment' | t }}</h3>
+          <div class="pay-status">{{ ('paymentStatus.' + pay.status) | t }}</div>
+          @if (pay.cardLastFour) {
+            <div class="pay-card">
+              {{ pay.cardBrand }} **** {{ pay.cardLastFour }}
+            </div>
+          }
+          @if (pay.installment > 1) {
+            <div class="pay-installment">
+              {{ pay.installment }} {{ 'orders.installment' | t }}
+            </div>
+          }
+        </section>
+      }
+
+      <!-- Order summary -->
+      <section class="card">
+        <h3>{{ 'orders.summary' | t }}</h3>
+        <div class="summary-row">
+          <span>{{ 'orders.itemCount' | t }}</span>
+          <span>{{ order()!.items.length }}</span>
+        </div>
+        <div class="summary-row total">
+          <span>{{ 'common.total' | t }}</span>
+          <span>{{ order()!.grandTotal | scCurrency }}</span>
+        </div>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <sc-empty-state
+    icon="search"
+    [title]="'orders.notFound' | t"
+    [description]="'orders.notFoundDescription' | t"
+  />
+}

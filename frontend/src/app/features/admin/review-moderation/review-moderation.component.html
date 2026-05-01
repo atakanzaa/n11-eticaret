@@ -1,0 +1,93 @@
+<h1>Bekleyen Degerlendirmeler</h1>
+
+@if (loading()) {
+  <sc-spinner size="lg" label="Yukleniyor..." />
+} @else if (reviews().length === 0) {
+  <sc-empty-state
+    icon="check-circle"
+    title="Bekleyen degerlendirme yok"
+    description="Tum degerlendirmeler islendi." />
+} @else {
+  <div class="review-list">
+    @for (r of reviews(); track r.id) {
+      <article class="review-card">
+        <div class="review-header">
+          <div class="review-meta">
+            <strong>{{ r.userDisplayName }}</strong>
+            <span class="muted">Urun: {{ r.productId }}</span>
+            <span class="muted">{{ r.createdAt | date: 'medium' }}</span>
+          </div>
+          <sc-star-rating [value]="r.rating" size="sm" />
+        </div>
+
+        @if (r.title) {
+          <h3 class="review-title">{{ r.title }}</h3>
+        }
+
+        @if (r.comment) {
+          <p class="review-comment">{{ r.comment }}</p>
+        }
+
+        @if (r.variantInfo) {
+          <span class="variant-info">{{ r.variantInfo }}</span>
+        }
+
+        @if (r.verifiedPurchase) {
+          <span class="verified-badge">Dogrulanmis Satin Alma</span>
+        }
+
+        @if (r.imageUrls && r.imageUrls.length > 0) {
+          <div class="review-images">
+            @for (img of r.imageUrls; track img) {
+              <img [src]="img" alt="Degerlendirme gorseli" class="review-img" />
+            }
+          </div>
+        }
+
+        <div class="review-actions">
+          <button type="button" class="btn-approve" (click)="approve(r.id)">Onayla</button>
+          <button type="button" class="btn-reject" (click)="openRejectModal(r.id)">Reddet</button>
+        </div>
+      </article>
+    }
+  </div>
+
+  <sc-pagination
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [isFirst]="isFirst()"
+    [isLast]="isLast()"
+    (pageChange)="onPageChange($event)" />
+}
+
+<!-- Reject Modal -->
+<sc-modal
+  [open]="rejectModalOpen()"
+  title="Degerlendirmeyi Reddet"
+  size="sm"
+  (closed)="rejectModalOpen.set(false)">
+  <div class="reject-form">
+    <sc-form-field label="Red Nedeni" [required]="true">
+      <textarea
+        [(ngModel)]="rejectReason"
+        name="rejectReason"
+        rows="4"
+        placeholder="Reddetme nedenini yaziniz..."></textarea>
+    </sc-form-field>
+
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" (click)="rejectModalOpen.set(false)">Vazgec</button>
+      <button
+        type="button"
+        class="btn-reject"
+        [disabled]="rejecting() || !rejectReason.trim()"
+        (click)="confirmReject()">
+        @if (rejecting()) {
+          Reddediliyor...
+        } @else {
+          Reddet
+        }
+      </button>
+    </div>
+  </div>
+</sc-modal>

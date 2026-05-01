@@ -1,0 +1,239 @@
+<div class="checkout-container">
+  <div class="checkout-header">
+    <h1 class="checkout-title">{{ 'checkout.title' | t }}</h1>
+    <span class="secure-badge">&#10003; Guvenli islem</span>
+  </div>
+
+  <sc-step-indicator [steps]="stepLabels" [currentStep]="currentStep()" />
+
+  @if (loading()) {
+    <div class="loading-wrap">
+      <sc-spinner size="lg" [label]="'common.loading' | t" />
+    </div>
+  } @else {
+    <div class="checkout-grid">
+      <!-- Main form area -->
+      <div class="checkout-form">
+        <!-- Step 1: Address -->
+        @if (currentStep() === 0) {
+          <div class="step-panel">
+            <h3 class="step-title">Teslimat adresi</h3>
+
+            @if (addresses().length === 0) {
+              <div class="no-address">
+                <p class="muted">Oncelikle profil sayfasindan bir adres eklemeniz gerekiyor.</p>
+                <a [routerLink]="['/hesap/profil']" class="btn-ghost">Adres ekle &rarr;</a>
+              </div>
+            } @else {
+              <div class="address-list">
+                @for (addr of addresses(); track addr.id) {
+                  <sc-address-card
+                    [label]="addr.label"
+                    [fullName]="addr.fullName"
+                    [address]="addr.fullAddress"
+                    [district]="addr.district"
+                    [city]="addr.city"
+                    [phone]="addr.phone"
+                    [selected]="selectedAddressId() === addr.id"
+                    [selectable]="true"
+                    [showActions]="false"
+                    (select)="selectAddress(addr.id)" />
+                }
+              </div>
+            }
+
+            <div class="step-actions">
+              <span></span>
+              <button
+                type="button"
+                class="btn-dark"
+                [disabled]="!canProceedFromAddress()"
+                (click)="nextStep()">
+                Devam et &rarr;
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Step 2: Payment -->
+        @if (currentStep() === 1) {
+          <div class="step-panel">
+            <h3 class="step-title">Odeme yontemi</h3>
+
+            <form [formGroup]="form" novalidate>
+              <div class="card-form" formGroupName="card">
+                <sc-form-field label="Kart numarasi" [required]="true">
+                  <input
+                    class="sc-input"
+                    formControlName="number"
+                    autocomplete="cc-number"
+                    placeholder="0000 0000 0000 0000"
+                    maxlength="19"
+                    (input)="formatCardNumber($event)" />
+                </sc-form-field>
+
+                <sc-form-field label="Kart uzerindeki isim" [required]="true">
+                  <input
+                    class="sc-input"
+                    formControlName="holderName"
+                    autocomplete="cc-name"
+                    placeholder="Ad Soyad" />
+                </sc-form-field>
+
+                <div class="card-row">
+                  <sc-form-field label="Son kullanma tarihi" [required]="true">
+                    <div class="expire-inputs">
+                      <input
+                        class="sc-input expire-input"
+                        formControlName="expireMonth"
+                        placeholder="AA"
+                        maxlength="2" />
+                      <span class="expire-sep">/</span>
+                      <input
+                        class="sc-input expire-input"
+                        formControlName="expireYear"
+                        placeholder="YYYY"
+                        maxlength="4" />
+                    </div>
+                  </sc-form-field>
+
+                  <sc-form-field label="CVV" [required]="true">
+                    <input
+                      class="sc-input"
+                      formControlName="cvc"
+                      autocomplete="cc-csc"
+                      placeholder="&bull;&bull;&bull;"
+                      maxlength="4" />
+                  </sc-form-field>
+                </div>
+              </div>
+            </form>
+
+            <!-- Installments -->
+            <div class="installment-section">
+              <label class="installment-label">Taksit secenekleri</label>
+              <div class="installment-grid">
+                @for (n of installments; track n) {
+                  <button
+                    type="button"
+                    class="installment-option"
+                    [class.selected]="selectedInstallment() === n"
+                    (click)="selectInstallment(n)">
+                    <strong>{{ n === 1 ? 'Tek cekim' : n + ' ay' }}</strong>
+                    <span class="installment-monthly">
+                      {{ monthlyPayment() | scCurrency }}/ay
+                    </span>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="step-actions">
+              <button type="button" class="btn-ghost" (click)="prevStep()">&larr; Geri</button>
+              <button type="button" class="btn-dark" (click)="nextStep()">Devam et &rarr;</button>
+            </div>
+          </div>
+        }
+
+        <!-- Step 3: Review & Confirm -->
+        @if (currentStep() === 2) {
+          <div class="step-panel">
+            <h3 class="step-title">Siparis onayi</h3>
+
+            <!-- Review items -->
+            @if (cart.cart(); as c) {
+              <div class="review-items">
+                @for (item of c.items; track item.id) {
+                  <div class="review-item">
+                    <div class="review-item-image">
+                      @if (item.productImageSnapshot) {
+                        <img [src]="item.productImageSnapshot" [alt]="item.productTitleSnapshot" />
+                      } @else {
+                        <div class="review-item-placeholder">&#128722;</div>
+                      }
+                    </div>
+                    <div class="review-item-info">
+                      <div class="review-item-title">{{ item.productTitleSnapshot }}</div>
+                      <div class="review-item-meta">Adet: {{ item.quantity }}</div>
+                    </div>
+                    <div class="review-item-price">{{ item.subtotal | scCurrency }}</div>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Selected address summary -->
+            @if (selectedAddress(); as addr) {
+              <div class="review-section">
+                <h4 class="review-section-title">Teslimat adresi</h4>
+                <div class="review-address">
+                  <strong>{{ addr.label }}</strong> &middot; {{ addr.fullName }}<br />
+                  {{ addr.fullAddress }}, {{ addr.district }}/{{ addr.city }}
+                </div>
+              </div>
+            }
+
+            <!-- Payment summary -->
+            <div class="review-section">
+              <h4 class="review-section-title">Odeme bilgisi</h4>
+              <div class="review-payment">
+                {{ selectedInstallment() === 1 ? 'Tek cekim' : selectedInstallment() + ' taksit' }}
+                &middot; {{ (cart.subtotal() - cart.discount()) | scCurrency }}
+              </div>
+            </div>
+
+            <form [formGroup]="form" novalidate>
+              <label class="terms-check">
+                <input type="checkbox" formControlName="terms" />
+                <span>{{ 'checkout.termsAccept' | t }}</span>
+              </label>
+            </form>
+
+            <div class="step-actions">
+              <button type="button" class="btn-ghost" (click)="prevStep()">&larr; Geri</button>
+              <button
+                type="button"
+                class="btn-primary btn-lg"
+                [disabled]="form.invalid || submitting()"
+                (click)="submit()">
+                @if (submitting()) {
+                  <sc-spinner size="sm" />
+                  <span>3D Secure dogrulaniyor...</span>
+                } @else {
+                  Siparisi Tamamla
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Order summary sidebar -->
+      <aside class="checkout-summary">
+        <h3 class="summary-title">Ozet</h3>
+        @if (cart.cart()) {
+          <div class="summary-rows">
+            <div class="summary-row">
+              <span>{{ 'common.subtotal' | t }}</span>
+              <span>{{ cart.subtotal() | scCurrency }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Kargo</span>
+              <span class="free-text">Ucretsiz</span>
+            </div>
+            @if (cart.discount() > 0) {
+              <div class="summary-row discount-row">
+                <span>{{ 'common.discount' | t }}</span>
+                <span>&minus;{{ cart.discount() | scCurrency }}</span>
+              </div>
+            }
+            <div class="summary-row total-row">
+              <span>{{ 'common.total' | t }}</span>
+              <span>{{ (cart.subtotal() - cart.discount()) | scCurrency }}</span>
+            </div>
+          </div>
+        }
+      </aside>
+    </div>
+  }
+</div>

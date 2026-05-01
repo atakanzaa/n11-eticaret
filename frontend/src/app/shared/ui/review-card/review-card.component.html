@@ -1,0 +1,21 @@
+<article class="review">
+  <header>
+    <div class="meta">
+      <strong>{{ author() }}</strong>
+      <sc-star-rating [value]="rating()" size="sm" />
+      @if (verified()) {
+        <span class="verified">✓ Dogrulanmis alisveris</span>
+      }
+    </div>
+    <time class="date">{{ date() | date:'mediumDate' }}</time>
+  </header>
+  @if (title()) {
+    <h4>{{ title() }}</h4>
+  }
+  @if (comment()) {
+    <p>{{ comment() }}</p>
+  }
+  @if (helpfulCount() > 0) {
+    <span class="helpful">{{ helpfulCount() }} kisi faydali buldu</span>
+  }
+</article>

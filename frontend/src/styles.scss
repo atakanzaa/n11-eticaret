@@ -1,6 +1,8 @@
 /* ==========================================================================
    SmartCommerce — global styles & design tokens
    ========================================================================== */
+@use 'styles/animations';
+/* Tokens & mixins are consumed by components via @use — not imported here. */
 
 :root {
   /* Brand */

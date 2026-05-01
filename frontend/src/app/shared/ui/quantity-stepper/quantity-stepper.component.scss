@@ -1,0 +1,37 @@
+:host { display: inline-flex; }
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  overflow: hidden;
+}
+
+button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--sc-surface);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--sc-text);
+  cursor: pointer;
+  transition: background 120ms;
+
+  &:hover:not(:disabled) { background: var(--sc-surface-2); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.count {
+  min-width: 40px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  border-left: 1px solid var(--sc-border);
+  border-right: 1px solid var(--sc-border);
+  padding: 0 4px;
+}

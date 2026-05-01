@@ -1,0 +1,76 @@
+<div class="success-container">
+  @if (loading()) {
+    <div class="loading-wrap">
+      <sc-spinner size="lg" [label]="'common.loading' | t" />
+    </div>
+  } @else if (order()) {
+    <div class="success-card">
+      <!-- Animated check icon -->
+      <div class="check-circle">
+        <svg class="check-svg" viewBox="0 0 52 52">
+          <circle class="check-bg" cx="26" cy="26" r="25" fill="none" />
+          <path class="check-mark" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+        </svg>
+      </div>
+
+      <h2 class="success-title">{{ 'checkout.paymentSuccess' | t }}</h2>
+      <p class="success-subtitle">Siparisizin basariyla olusturuldu</p>
+
+      <div class="order-info">
+        <div class="order-number">
+          <span class="order-label">{{ 'checkout.orderNumber' | t }}</span>
+          <strong class="order-value">#{{ order()!.orderNumber }}</strong>
+        </div>
+        <div class="order-total">
+          <span class="order-label">Toplam</span>
+          <strong class="order-total-value">{{ order()!.grandTotal | scCurrency }}</strong>
+        </div>
+      </div>
+
+      <!-- Order items summary -->
+      @if (order()!.items.length > 0) {
+        <div class="order-items">
+          @for (item of order()!.items; track item.id) {
+            <div class="order-item">
+              <div class="order-item-image">
+                @if (item.productImageUrl) {
+                  <img [src]="item.productImageUrl" [alt]="item.productTitle" />
+                } @else {
+                  <div class="order-item-placeholder">&#128722;</div>
+                }
+              </div>
+              <div class="order-item-info">
+                <span class="order-item-title">{{ item.productTitle }}</span>
+                <span class="order-item-qty">x{{ item.quantity }}</span>
+              </div>
+              <span class="order-item-price">{{ item.lineTotal | scCurrency }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      @if (shipments().length > 0) {
+        <div class="shipping-info">
+          <span class="shipping-icon">&#128666;</span>
+          <div class="shipping-details">
+            <span class="shipping-label">{{ 'checkout.estimatedDelivery' | t }}</span>
+            <span class="shipping-carrier">{{ shipments()[0].cargoProvider }}
+              @if (shipments()[0].trackingNumber) {
+                &middot; {{ shipments()[0].trackingNumber }}
+              }
+            </span>
+          </div>
+        </div>
+      }
+
+      <div class="success-actions">
+        <a [routerLink]="['/hesap/siparis', order()!.id]" class="btn-primary">
+          {{ 'nav.orders' | t }}
+        </a>
+        <a [routerLink]="['/']" class="btn-secondary">
+          {{ 'checkout.backToShopping' | t }}
+        </a>
+      </div>
+    </div>
+  }
+</div>

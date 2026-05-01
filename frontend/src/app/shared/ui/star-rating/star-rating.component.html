@@ -1,0 +1,16 @@
+<span class="rating" [class]="size()" [class.interactive]="interactive()">
+  @for (star of stars(); track $index) {
+    <span
+      class="star"
+      [class.full]="star === 'full'"
+      [class.half]="star === 'half'"
+      [class.empty]="star === 'empty'"
+      (click)="onStarClick($index)"
+      [attr.role]="interactive() ? 'button' : null"
+      [attr.aria-label]="interactive() ? ($index + 1) + ' yildiz' : null"
+    >★</span>
+  }
+  @if (count() !== null) {
+    <span class="count">({{ count() }})</span>
+  }
+</span>

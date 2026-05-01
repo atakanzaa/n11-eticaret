@@ -1,0 +1,23 @@
+<div
+  class="card"
+  [class.selected]="selected()"
+  [class.selectable]="selectable()"
+  (click)="selectable() ? select.emit() : null"
+>
+  <div class="head">
+    <strong>{{ label() }}</strong>
+    <span class="name">{{ fullName() }}</span>
+  </div>
+  <div class="body">
+    {{ address() }}, {{ district() }}/{{ city() }}
+    @if (phone()) {
+      <span class="phone">· {{ phone() }}</span>
+    }
+  </div>
+  @if (showActions()) {
+    <div class="actions">
+      <button type="button" class="action" (click)="edit.emit(); $event.stopPropagation()">Duzenle</button>
+      <button type="button" class="action danger" (click)="delete.emit(); $event.stopPropagation()">Sil</button>
+    </div>
+  }
+</div>

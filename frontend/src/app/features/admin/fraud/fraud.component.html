@@ -1,0 +1,75 @@
+<h1>{{ 'admin.fraud' | t }}</h1>
+
+@if (loading()) {
+  <sc-spinner size="lg" label="Yukleniyor..." />
+} @else {
+  <section>
+    <h3>Son Kontroller</h3>
+    @if (checks().length === 0) {
+      <sc-empty-state
+        icon="shield"
+        title="Kontrol bulunamadi"
+        description="Henuz fraud kontrolu yapilmamis." />
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Siparis</th>
+            <th>Tutar</th>
+            <th>{{ 'fraud.riskScore' | t }}</th>
+            <th>Karar</th>
+            <th>Tarih</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of checks(); track c.id) {
+            <tr>
+              <td><code>{{ c.orderId }}</code></td>
+              <td>{{ c.amount | scCurrency }}</td>
+              <td>
+                <div class="risk">
+                  <div class="bar" [style.width.%]="c.riskScore" [style.background]="riskColor(c.riskScore)"></div>
+                  <span>{{ c.riskScore }}</span>
+                </div>
+              </td>
+              <td>
+                @switch (c.decision) {
+                  @case ('APPROVE') {
+                    <sc-status-badge label="{{ 'fraudDecision.' + c.decision | t }}" variant="success" />
+                  }
+                  @case ('REVIEW') {
+                    <sc-status-badge label="{{ 'fraudDecision.' + c.decision | t }}" variant="warning" />
+                  }
+                  @case ('BLOCK') {
+                    <sc-status-badge label="{{ 'fraudDecision.' + c.decision | t }}" variant="danger" />
+                  }
+                }
+              </td>
+              <td>{{ c.createdAt | date: 'short' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <section>
+    <h3>{{ 'fraud.blacklist' | t }} ({{ blacklist().length }})</h3>
+    @if (blacklist().length === 0) {
+      <sc-empty-state
+        icon="ban"
+        title="Kara liste bos"
+        description="Kara listede kayit yok." />
+    } @else {
+      <ul class="bl">
+        @for (b of blacklist(); track b.id) {
+          <li>
+            <sc-status-badge [label]="'blacklistType.' + b.blacklistType | t" variant="neutral" />
+            <code>{{ b.value }}</code>
+            <span class="muted">{{ b.reason }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+}

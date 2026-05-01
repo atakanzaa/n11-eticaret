@@ -1,0 +1,7 @@
+<span class="price-display" [class]="size()">
+  @if (discountPct(); as pct) {
+    <del class="list-price">{{ listPrice() | scCurrency }}</del>
+    <span class="discount-badge">%{{ pct }}</span>
+  }
+  <ins class="current-price">{{ price() | scCurrency }}</ins>
+</span>

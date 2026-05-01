@@ -1,0 +1,77 @@
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100dvh;
+}
+
+.sidebar {
+  background: var(--sc-surface);
+  border-right: 1px solid var(--sc-border);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.brand {
+  color: var(--sc-primary);
+  font-weight: 700;
+  font-size: 18px;
+  text-decoration: none;
+}
+
+.user-info {
+  padding: 0 12px;
+}
+
+.user-name {
+  font-size: 14px;
+  color: var(--sc-text-muted);
+}
+
+nav {
+  display: flex;
+  flex-direction: column;
+}
+
+nav a {
+  padding: 10px 12px;
+  color: var(--sc-text-muted);
+  text-decoration: none;
+  border-radius: var(--sc-radius-sm);
+  font-size: 14px;
+}
+
+nav a.active,
+nav a:hover {
+  background: var(--sc-surface-2);
+  color: var(--sc-text);
+}
+
+.bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bottom a {
+  color: var(--sc-text-muted);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.bottom button {
+  background: none;
+  border: 0;
+  color: var(--sc-danger);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.content {
+  padding: 32px;
+  background: var(--sc-bg);
+}

@@ -1,0 +1,37 @@
+<footer class="footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a routerLink="/" class="logo">
+        <span class="mark"></span>
+        <span class="word">SmartCommerce</span>
+      </a>
+      <p class="tagline">Akilli alisveris deneyimi</p>
+    </div>
+
+    <div class="footer-links">
+      <div class="col">
+        <h4>Alisveris</h4>
+        <a routerLink="/arama">Tum Urunler</a>
+        <a routerLink="/arama" [queryParams]="{ sort: 'createdAt,desc' }">Yeni Gelenler</a>
+        <a routerLink="/arama" [queryParams]="{ sort: 'averageRating,desc' }">En Cok Begenilen</a>
+      </div>
+      <div class="col">
+        <h4>Hesabim</h4>
+        <a routerLink="/hesap/profil">Profilim</a>
+        <a routerLink="/hesap/siparislerim">Siparislerim</a>
+        <a routerLink="/sepet">Sepetim</a>
+      </div>
+      <div class="col">
+        <h4>Bilgi</h4>
+        <a routerLink="/">Hakkimizda</a>
+        <a routerLink="/">Gizlilik Politikasi</a>
+        <a routerLink="/">Kullanim Kosullari</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span class="brand-text">SmartCommerce</span>
+    <span class="copyright">&copy; 2026 &mdash; Tum haklari saklidir.</span>
+  </div>
+</footer>

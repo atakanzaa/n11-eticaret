@@ -38,4 +38,12 @@ export class AuthApi {
   me(): Observable<UserDto> {
     return this.http.get<UserDto>(`${this.base}/me`);
   }
+
+  changePassword(request: { currentPassword: string; newPassword: string }): Observable<void> {
+    return this.http.post<void>(`${this.base}/me/password`, request);
+  }
+
+  becomeSeller(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/become-seller`, {});
+  }
 }

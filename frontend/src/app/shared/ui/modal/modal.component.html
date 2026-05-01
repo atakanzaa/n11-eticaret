@@ -1,0 +1,26 @@
+@if (open()) {
+  <div class="backdrop" (click)="onBackdropClick()">
+    <div
+      class="dialog"
+      [class]="size()"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+    >
+      @if (title() || closable()) {
+        <header>
+          @if (title()) { <h2>{{ title() }}</h2> }
+          @if (closable()) {
+            <button type="button" class="close-btn" (click)="close()" aria-label="Kapat">&times;</button>
+          }
+        </header>
+      }
+      <div class="body">
+        <ng-content />
+      </div>
+      <footer>
+        <ng-content select="[modal-footer]" />
+      </footer>
+    </div>
+  </div>
+}

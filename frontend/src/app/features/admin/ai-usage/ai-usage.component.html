@@ -1,0 +1,63 @@
+<h1>{{ 'admin.aiUsage' | t }}</h1>
+
+@if (loading()) {
+  <sc-spinner size="lg" label="Yukleniyor..." />
+} @else if (data()) {
+  <section class="budget">
+    <sc-kpi-card
+      [label]="('ai.todayUsed' | t)"
+      [value]="formatUsd(data()!.todayUsedUsd)" />
+    <sc-kpi-card
+      [label]="('ai.dailyBudget' | t)"
+      [value]="formatUsd(data()!.dailyBudgetUsd)" />
+    <sc-kpi-card
+      [label]="('ai.remaining' | t)"
+      [value]="formatUsd(data()!.remainingUsd)" />
+  </section>
+
+  <section class="card">
+    <h3>{{ 'ai.providerDistribution' | t }}</h3>
+    @if (data()!.byProvider.length === 0) {
+      <p class="muted">{{ 'common.empty' | t }}</p>
+    } @else {
+      <ul class="providers">
+        @for (p of data()!.byProvider; track p.provider) {
+          <li>
+            <strong>{{ p.provider }}</strong>
+            <span>{{ p.requestCount | number }} istek</span>
+            <span>{{ formatUsd(p.costUsd) }}</span>
+            <div class="bar-container">
+              <div class="bar" [style.width.%]="percent(p.costUsd)"></div>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section class="card">
+    <h3>{{ 'ai.dailySpend' | t }}</h3>
+    @if (data()!.dailyUsage.length === 0) {
+      <p class="muted">{{ 'common.empty' | t }}</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Maliyet</th>
+            <th>Istek</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of data()!.dailyUsage; track d.date) {
+            <tr>
+              <td>{{ d.date | date: 'mediumDate' }}</td>
+              <td>{{ formatUsd(d.costUsd) }}</td>
+              <td>{{ d.requestCount | number }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+}

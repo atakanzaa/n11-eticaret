@@ -1,0 +1,13 @@
+<div class="timeline">
+  @for (event of events(); track $index; let last = $last) {
+    <div class="event" [class]="event.status || 'pending'">
+      <div class="dot"></div>
+      @if (!last) { <div class="line"></div> }
+      <div class="content">
+        <strong>{{ event.label }}</strong>
+        @if (event.detail) { <span class="detail">{{ event.detail }}</span> }
+        <time>{{ event.date | date:'medium' }}</time>
+      </div>
+    </div>
+  }
+</div>

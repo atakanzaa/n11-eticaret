@@ -1,4 +1,4 @@
-export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
+export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 
 export interface ProductImageDto {
   id: string;

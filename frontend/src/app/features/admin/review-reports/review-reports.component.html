@@ -1,0 +1,60 @@
+<h1>Bildirilen Degerlendirmeler</h1>
+
+@if (loading()) {
+  <sc-spinner size="lg" label="Yukleniyor..." />
+} @else if (reports().length === 0) {
+  <sc-empty-state
+    icon="flag"
+    title="Bildirilen degerlendirme yok"
+    description="Sikayet edilen degerlendirme bulunmuyor." />
+} @else {
+  <table>
+    <thead>
+      <tr>
+        <th>Degerlendirme ID</th>
+        <th>Bildiren Kullanici</th>
+        <th>Neden</th>
+        <th>Aciklama</th>
+        <th>Durum</th>
+        <th>Tarih</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of reports(); track r.id) {
+        <tr>
+          <td><code>{{ r.reviewId }}</code></td>
+          <td><code>{{ r.userId }}</code></td>
+          <td>{{ r.reason }}</td>
+          <td>{{ r.description ?? '-' }}</td>
+          <td>
+            <sc-status-badge [label]="r.status" [variant]="statusVariant(r.status)" />
+          </td>
+          <td>{{ r.createdAt | date: 'short' }}</td>
+          <td>
+            @if (r.status === 'PENDING') {
+              <button type="button" class="btn-dismiss" (click)="confirmDismiss(r.id)">Kaldir</button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <sc-pagination
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [isFirst]="isFirst()"
+    [isLast]="isLast()"
+    (pageChange)="onPageChange($event)" />
+}
+
+<!-- Dismiss Confirm Dialog -->
+<sc-confirm-dialog
+  [open]="dismissDialogOpen()"
+  title="Raporu Kaldir"
+  message="Bu raporu kaldirmak istediginize emin misiniz?"
+  confirmLabel="Kaldir"
+  variant="danger"
+  (confirmed)="onDismissConfirmed()"
+  (cancelled)="dismissDialogOpen.set(false)" />

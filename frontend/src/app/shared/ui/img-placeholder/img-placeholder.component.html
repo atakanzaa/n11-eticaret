@@ -1,0 +1,16 @@
+<div
+  class="ph"
+  [style.background]="bg()"
+  [style.aspectRatio]="ratio()"
+  role="img"
+  [attr.aria-label]="label()"
+>
+  <div class="ph-inner">
+    <svg class="ph-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect x="4" y="6" width="24" height="20" rx="3" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="12" cy="14" r="3" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M4 22l7-6 4 3 5-5 8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="ph-label">{{ label() }}</span>
+  </div>
+</div>

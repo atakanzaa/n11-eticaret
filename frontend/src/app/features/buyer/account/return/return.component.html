@@ -1,0 +1,128 @@
+@if (loading()) {
+  <div class="spinner-wrap">
+    <sc-spinner size="lg" [label]="'common.loading' | t" />
+  </div>
+} @else if (returnRecord()) {
+  <!-- Success state -->
+  <div class="done-card">
+    <div class="done-icon">&#8617;</div>
+    <h2>{{ 'return.requestReceived' | t }}</h2>
+    <p class="done-number">{{ 'return.requestNumber' | t }}: <strong>#{{ returnRecord()!.returnNumber }}</strong></p>
+    <sc-status-badge
+      [label]="('returnStatus.' + returnRecord()!.status) | t"
+      [variant]="returnStatusVariant(returnRecord()!.status)"
+    />
+
+    <div class="step-list">
+      <div class="step" [class.done]="true">
+        <span class="step-dot">&#10003;</span>
+        {{ 'return.step1' | t }}
+      </div>
+      <div class="step">
+        <span class="step-dot">2</span>
+        {{ 'return.step2' | t }}
+      </div>
+      <div class="step">
+        <span class="step-dot">3</span>
+        {{ 'return.step3' | t }}
+      </div>
+      <div class="step">
+        <span class="step-dot">4</span>
+        {{ 'return.step4' | t }}
+      </div>
+      <div class="step">
+        <span class="step-dot">5</span>
+        {{ 'return.step5' | t }}
+      </div>
+    </div>
+
+    <a routerLink="/hesap/siparislerim" class="btn btn-primary">
+      {{ 'nav.orders' | t }}
+    </a>
+  </div>
+} @else if (order()) {
+  <sc-breadcrumb [items]="breadcrumbs()" />
+  <h2>{{ 'return.startReturn' | t }}</h2>
+  <p class="hint">
+    {{ 'orders.orderPrefix' | t }} <strong>#{{ order()!.orderNumber }}</strong>
+    &middot; {{ order()!.items.length }} {{ 'common.piece' | t }}
+  </p>
+
+  <div class="form-card">
+    <!-- Item selection -->
+    <h3>{{ 'return.selectItems' | t }}</h3>
+    <div class="items-list">
+      @for (item of order()!.items; track item.id; let i = $index) {
+        <label class="item-row" [class.selected]="selectedItems()[i]">
+          <input
+            type="checkbox"
+            [checked]="selectedItems()[i]"
+            (change)="toggleItem(i)"
+          />
+          <div class="item-thumb">
+            @if (item.productImageUrl) {
+              <img [src]="item.productImageUrl" [alt]="item.productTitle" />
+            } @else {
+              <div class="thumb-placeholder"></div>
+            }
+          </div>
+          <div class="item-info">
+            <div class="item-title">{{ item.productTitle }}</div>
+            <div class="item-meta">{{ item.quantity }} {{ 'common.piece' | t }} &middot; {{ item.lineTotal | scCurrency }}</div>
+          </div>
+        </label>
+      }
+    </div>
+
+    <!-- Return reason -->
+    <h3>{{ 'return.reason' | t }}</h3>
+    <div class="reasons">
+      @for (r of reasons; track r) {
+        <button
+          type="button"
+          class="reason-btn"
+          [class.selected]="selectedReason === r"
+          (click)="selectedReason = r"
+        >
+          {{ ('returnReason.' + r) | t }}
+        </button>
+      }
+    </div>
+
+    <!-- Description -->
+    <h3>{{ 'return.description' | t }}</h3>
+    <sc-form-field [label]="'return.descriptionHint' | t">
+      <textarea
+        class="sc-textarea"
+        rows="4"
+        [placeholder]="'return.descriptionPlaceholder' | t"
+        [(ngModel)]="description"
+      ></textarea>
+    </sc-form-field>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <a [routerLink]="['/hesap/siparis', order()!.id]" class="btn btn-ghost">
+        {{ 'common.cancel' | t }}
+      </a>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!canSubmit() || submitting()"
+        (click)="submit()"
+      >
+        @if (submitting()) {
+          <sc-spinner size="sm" />
+        } @else {
+          {{ 'return.submit' | t }}
+        }
+      </button>
+    </div>
+  </div>
+} @else {
+  <sc-empty-state
+    icon="search"
+    [title]="'orders.notFound' | t"
+    [description]="'orders.notFoundDescription' | t"
+  />
+}

@@ -1,0 +1,461 @@
+// ─── Container ──────────────────────────────────────
+.checkout-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.checkout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.checkout-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.secure-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sc-success);
+  background: var(--sc-success-50, rgba(34, 197, 94, 0.08));
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+// ─── Loading ────────────────────────────────────────
+.loading-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+// ─── Grid layout ────────────────────────────────────
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 28px;
+  margin-top: 28px;
+  align-items: start;
+}
+
+// ─── Form card ──────────────────────────────────────
+.checkout-form {
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg, 12px);
+  overflow: hidden;
+}
+
+.step-panel {
+  padding: 28px;
+}
+
+.step-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 24px;
+}
+
+// ─── Address list ───────────────────────────────────
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.no-address {
+  padding: 32px;
+  text-align: center;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+}
+
+.muted {
+  color: var(--sc-text-muted);
+  margin-bottom: 12px;
+}
+
+// ─── Card form ──────────────────────────────────────
+.card-form {
+  background: var(--sc-surface-2);
+  padding: 24px;
+  border-radius: var(--sc-radius-lg, 12px);
+  margin-bottom: 24px;
+}
+
+.sc-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+  font-size: 14px;
+  background: var(--sc-surface);
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--sc-primary);
+  }
+}
+
+.card-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+}
+
+.expire-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expire-input {
+  width: 70px !important;
+  text-align: center;
+}
+
+.expire-sep {
+  font-size: 18px;
+  color: var(--sc-text-muted);
+}
+
+// ─── Installments ───────────────────────────────────
+.installment-section {
+  margin: 24px 0;
+}
+
+.installment-label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.installment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.installment-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border: 1.5px solid var(--sc-border);
+  background: var(--sc-surface);
+  border-radius: var(--sc-radius);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  strong {
+    font-size: 13px;
+  }
+
+  &:hover {
+    border-color: var(--sc-text);
+  }
+
+  &.selected {
+    border-color: var(--sc-text);
+    background: var(--sc-text);
+    color: #fff;
+
+    .installment-monthly {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+}
+
+.installment-monthly {
+  font-size: 11px;
+  color: var(--sc-text-muted);
+}
+
+// ─── Review section ─────────────────────────────────
+.review-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.review-item {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+}
+
+.review-item-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--sc-surface);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.review-item-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  opacity: 0.3;
+  background: repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.03) 0 6px,
+      transparent 6px 12px
+    ),
+    var(--sc-surface-2);
+}
+
+.review-item-title {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.review-item-meta {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+}
+
+.review-item-price {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.review-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+}
+
+.review-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-text-muted);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.review-address {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.review-payment {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+// ─── Terms checkbox ─────────────────────────────────
+.terms-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+}
+
+// ─── Step actions ───────────────────────────────────
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--sc-border);
+}
+
+// ─── Buttons ────────────────────────────────────────
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--sc-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-radius: var(--sc-radius-sm);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--sc-text);
+    background: var(--sc-surface-2);
+  }
+}
+
+.btn-dark {
+  background: var(--sc-text);
+  color: var(--sc-surface);
+  border: none;
+  padding: 14px 28px;
+  border-radius: var(--sc-radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: var(--sc-primary);
+  color: #fff;
+  border: none;
+  padding: 14px 28px;
+  border-radius: var(--sc-radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: filter 0.15s;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-lg {
+  padding: 16px 32px;
+  font-size: 16px;
+}
+
+// ─── Summary sidebar ────────────────────────────────
+.checkout-summary {
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg, 12px);
+  padding: 24px;
+  position: sticky;
+  top: 140px;
+  align-self: start;
+}
+
+.summary-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 20px;
+}
+
+.summary-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+.discount-row {
+  color: var(--sc-success);
+  font-weight: 500;
+}
+
+.free-text {
+  color: var(--sc-success);
+  font-weight: 500;
+}
+
+.total-row {
+  font-size: 20px;
+  font-weight: 700;
+  border-top: 1px solid var(--sc-border);
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
+// ─── Responsive ─────────────────────────────────────
+@media (max-width: 960px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-summary {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .checkout-container {
+    padding: 20px 16px;
+  }
+
+  .step-panel {
+    padding: 20px;
+  }
+
+  .card-row {
+    grid-template-columns: 1fr;
+  }
+
+  .installment-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .step-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+
+    .btn-dark,
+    .btn-primary {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+    }
+  }
+}

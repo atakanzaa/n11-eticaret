@@ -1,0 +1,15 @@
+@if (totalPages() > 1) {
+  <nav class="pagination" aria-label="Sayfalama">
+    <button
+      class="sc-btn sc-btn-ghost sc-btn-sm"
+      (click)="prev()"
+      [disabled]="isFirst()"
+    >← Onceki</button>
+    <span class="current">{{ currentPage() + 1 }} / {{ totalPages() }}</span>
+    <button
+      class="sc-btn sc-btn-ghost sc-btn-sm"
+      (click)="next()"
+      [disabled]="isLast()"
+    >Sonraki →</button>
+  </nav>
+}

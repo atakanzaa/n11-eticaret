@@ -1,0 +1,99 @@
+<div class="result-container">
+  <!-- Pending state -->
+  @if (state() === 'pending') {
+    <div class="result-card pending-card">
+      <div class="pending-spinner">
+        <sc-spinner size="lg" />
+      </div>
+      <h2 class="result-title">Banka onayi bekleniyor</h2>
+      <p class="result-subtitle">Islem sonucu kontrol ediliyor, lutfen bekleyin...</p>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
+  }
+
+  <!-- Success state -->
+  @if (state() === 'success' && payment(); as p) {
+    <div class="result-card success-card">
+      <div class="result-icon success-icon">
+        <svg viewBox="0 0 52 52" class="result-svg">
+          <circle class="result-circle success-circle" cx="26" cy="26" r="25" fill="none" />
+          <path class="result-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+        </svg>
+      </div>
+
+      <h2 class="result-title success-text">{{ 'checkout.paymentSuccess' | t }}</h2>
+      <p class="result-subtitle">Odemeniz basariyla tamamlandi</p>
+
+      @if (p.amount) {
+        <div class="amount-display">
+          <span class="amount-label">Odenen tutar</span>
+          <span class="amount-value">{{ p.paidAmount ?? p.amount | scCurrency }}</span>
+        </div>
+      }
+
+      <div class="payment-details">
+        @if (p.cardBrand || p.cardLastFour) {
+          <div class="detail-row">
+            <span class="detail-label">Kart</span>
+            <span class="detail-value">
+              @if (p.cardBrand) { {{ p.cardBrand }} }
+              @if (p.cardLastFour) { **** {{ p.cardLastFour }} }
+            </span>
+          </div>
+        }
+        @if (p.installment && p.installment > 1) {
+          <div class="detail-row">
+            <span class="detail-label">Taksit</span>
+            <span class="detail-value">{{ p.installment }} taksit</span>
+          </div>
+        }
+      </div>
+
+      <div class="result-actions">
+        <a [routerLink]="['/siparis-tamamlandi', p.orderId]" class="btn-primary">
+          Siparis detayina git
+        </a>
+        <a [routerLink]="['/']" class="btn-secondary">
+          Alisverise devam et
+        </a>
+      </div>
+    </div>
+  }
+
+  <!-- Failure state -->
+  @if (state() === 'failure') {
+    <div class="result-card failure-card">
+      <div class="result-icon failure-icon">
+        <svg viewBox="0 0 52 52" class="result-svg">
+          <circle class="result-circle failure-circle" cx="26" cy="26" r="25" fill="none" />
+          <path class="result-cross" fill="none" d="M16 16l20 20M36 16l-20 20" />
+        </svg>
+      </div>
+
+      <h2 class="result-title failure-text">{{ 'checkout.paymentFailure' | t }}</h2>
+
+      @if (payment()?.failureMessage) {
+        <p class="result-subtitle">{{ payment()!.failureMessage }}</p>
+      } @else {
+        <p class="result-subtitle">Odeme islemi basarisiz oldu. Lutfen tekrar deneyin.</p>
+      }
+
+      @if (payment()?.failureCode) {
+        <div class="error-code">
+          Hata kodu: <code>{{ payment()!.failureCode }}</code>
+        </div>
+      }
+
+      <div class="result-actions">
+        <a [routerLink]="['/odeme']" class="btn-primary">
+          Tekrar dene
+        </a>
+        <a [routerLink]="['/sepet']" class="btn-secondary">
+          {{ 'common.back' | t }}
+        </a>
+      </div>
+    </div>
+  }
+</div>

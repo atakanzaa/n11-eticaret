@@ -1,0 +1,31 @@
+:host { display: block; }
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sc-text-muted);
+}
+
+.value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sc-text);
+  font-family: var(--sc-mono);
+}
+
+.trend {
+  font-size: 12px;
+  font-weight: 600;
+
+  &.up   { color: var(--sc-success); }
+  &.down { color: var(--sc-danger); }
+  &.flat { color: var(--sc-text-faint); }
+}

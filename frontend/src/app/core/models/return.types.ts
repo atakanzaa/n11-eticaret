@@ -1,4 +1,13 @@
-export type ReturnStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'REFUNDED' | 'COMPLETED';
+export type ReturnStatus =
+  | 'REQUESTED'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'REFUND_PROCESSING'
+  | 'REFUND_FAILED'
+  | 'REFUNDED'
+  | 'INVENTORY_RESTOCKED'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export type ReturnReasonCode =
   | 'BUYER_REQUEST'

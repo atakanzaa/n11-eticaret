@@ -1,0 +1,124 @@
+h1 {
+  margin: 0 0 24px;
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reply-card {
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reply-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.review-ref {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-primary);
+  background: rgba(var(--sc-primary-rgb, 79, 70, 229), 0.08);
+  padding: 4px 10px;
+  border-radius: var(--sc-radius-sm);
+}
+
+.reply-date {
+  font-size: 13px;
+  color: var(--sc-text-muted);
+}
+
+.reply-content {
+  p {
+    margin: 0;
+    line-height: 1.6;
+  }
+}
+
+.updated-label {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+  font-style: italic;
+}
+
+.reply-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--sc-border);
+}
+
+.btn-action {
+  background: none;
+  border: 1px solid var(--sc-border);
+  padding: 6px 16px;
+  border-radius: var(--sc-radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+
+  &:hover {
+    background: var(--sc-surface-2);
+  }
+
+  &.danger {
+    color: var(--sc-danger, #dc3545);
+    border-color: var(--sc-danger, #dc3545);
+
+    &:hover {
+      background: rgba(220, 53, 69, 0.08);
+    }
+  }
+}
+
+.btn {
+  padding: 10px 24px;
+  border-radius: var(--sc-radius);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  color: var(--sc-text);
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.primary {
+    background: var(--sc-primary);
+    color: white;
+    border-color: var(--sc-primary);
+  }
+}
+
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sc-border);
+}

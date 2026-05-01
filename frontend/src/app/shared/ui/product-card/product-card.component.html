@@ -1,0 +1,63 @@
+<a class="card" [routerLink]="['/urun', product().id]">
+  <!-- Discount badge -->
+  @if (discountPercent() > 0) {
+    <span class="discount-badge">%{{ discountPercent() }}</span>
+  }
+
+  <!-- Product image -->
+  <div class="img-wrap">
+    @if (product().primaryImageUrl) {
+      <img
+        [src]="product().primaryImageUrl"
+        [alt]="product().title"
+        class="img"
+        loading="lazy"
+      />
+    } @else {
+      <sc-img-placeholder [label]="product().title" />
+    }
+  </div>
+
+  <!-- Product details -->
+  <div class="meta">
+    <h3 class="title">{{ product().title }}</h3>
+
+    <!-- Star rating -->
+    @if (product().reviewCount > 0) {
+      <div class="rating-row">
+        <sc-star-rating
+          [value]="product().averageRating"
+          [count]="product().reviewCount"
+          size="sm"
+        />
+      </div>
+    }
+
+    <!-- Price display -->
+    @if (offer()) {
+      <div class="price-row">
+        <sc-price
+          [price]="offer()!.price"
+          [listPrice]="offer()!.listPrice ?? null"
+          size="base"
+        />
+      </div>
+    }
+  </div>
+
+  <!-- Add to cart button -->
+  @if (offer()) {
+    <button
+      type="button"
+      class="add-btn"
+      (click)="onAdd($event)"
+      [disabled]="adding"
+      aria-label="Sepete ekle"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Sepet</span>
+    </button>
+  }
+</a>

@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ToastHostComponent } from './shared/ui/toast-host.component';
+import { ToastHostComponent } from './shared/ui/toast-host/toast-host.component';
 
 @Component({
   selector: 'sc-root',

@@ -1,0 +1,53 @@
+@if (alreadySeller()) {
+  <div class="auth-card">
+    <h1>{{ 'seller.alreadySellerTitle' | t }}</h1>
+    <p class="muted">{{ 'seller.alreadySellerMessage' | t }}</p>
+    <a class="primary" routerLink="/satici">{{ 'seller.goToDashboard' | t }}</a>
+  </div>
+} @else {
+  <form class="auth-card become-seller" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <h1>{{ 'seller.onboardTitle' | t }}</h1>
+    <p class="muted">{{ 'seller.onboardSubtitle' | t }}</p>
+
+    <sc-form-field
+      [label]="'seller.storeName' | t"
+      [required]="true"
+      [error]="storeNameError()"
+    >
+      <input type="text" formControlName="storeName" autocomplete="organization" maxlength="100" />
+    </sc-form-field>
+
+    <sc-form-field
+      [label]="('seller.storeDescription' | t) + ' (' + ('common.optional' | t) + ')'"
+      [error]="descriptionError()"
+    >
+      <textarea
+        formControlName="description"
+        rows="3"
+        maxlength="500"
+        [placeholder]="'seller.storeDescriptionPlaceholder' | t"
+      ></textarea>
+    </sc-form-field>
+
+    <label class="check">
+      <input type="checkbox" formControlName="agreement" />
+      <span>{{ 'seller.agreement' | t }}</span>
+    </label>
+
+    @if (errorMessage()) {
+      <p class="error" role="alert">{{ errorMessage() }}</p>
+    }
+
+    <button type="submit" class="primary" [disabled]="form.invalid || submitting()">
+      @if (submitting()) {
+        <sc-spinner size="sm" />
+      } @else {
+        <span>{{ 'seller.becomeSellerSubmit' | t }}</span>
+      }
+    </button>
+
+    <p class="muted">
+      <a routerLink="/">{{ 'common.cancel' | t }}</a>
+    </p>
+  </form>
+}

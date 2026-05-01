@@ -1,0 +1,11 @@
+<article class="kpi sc-card">
+  <span class="label">{{ label() }}</span>
+  <span class="value">{{ value() }}</span>
+  @if (trend()) {
+    <span class="trend" [class]="trend()!">
+      @if (trend() === 'up') { ↑ }
+      @else if (trend() === 'down') { ↓ }
+      {{ trendLabel() }}
+    </span>
+  }
+</article>

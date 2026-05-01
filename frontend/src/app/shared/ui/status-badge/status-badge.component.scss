@@ -1,0 +1,23 @@
+:host { display: inline-flex; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface-2);
+  color: var(--sc-text-muted);
+  white-space: nowrap;
+
+  &.sm { padding: 2px 8px; font-size: 11px; }
+
+  &.success { background: var(--sc-success-50); color: var(--sc-success); border-color: transparent; }
+  &.warning { background: var(--sc-warn-50); color: #b45309; border-color: transparent; }
+  &.danger  { background: var(--sc-danger-50); color: var(--sc-danger); border-color: transparent; }
+  &.info    { background: var(--sc-info-50); color: var(--sc-info); border-color: transparent; }
+  &.primary { background: var(--sc-primary-50); color: var(--sc-primary-600); border-color: transparent; }
+}

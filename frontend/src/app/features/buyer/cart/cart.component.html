@@ -1,0 +1,142 @@
+<div class="cart-container">
+  <h1 class="cart-title">
+    {{ 'cart.title' | t }}
+    @if (cart.cart(); as c) {
+      <span class="cart-count">({{ c.items.length }} {{ 'common.items' | t }})</span>
+    }
+  </h1>
+
+  @if (cart.loading()) {
+    <div class="loading-wrap">
+      <sc-spinner size="lg" [label]="'common.loading' | t" />
+    </div>
+  } @else if (!cart.cart() || cart.cart()!.items.length === 0) {
+    <sc-empty-state
+      icon="shopping_cart"
+      [title]="'cart.empty' | t"
+      [description]="'cart.emptyDescription' | t">
+      <a [routerLink]="['/']" class="btn-primary">{{ 'cart.keepShopping' | t }}</a>
+    </sc-empty-state>
+  } @else {
+    <div class="cart-grid">
+      <!-- Cart items -->
+      <section class="cart-lines">
+        @for (item of cart.cart()!.items; track item.id) {
+          <article class="cart-item">
+            <a class="item-image-wrap" [routerLink]="['/urun', item.productId]">
+              @if (item.productImageSnapshot) {
+                <img
+                  [src]="item.productImageSnapshot"
+                  [alt]="item.productTitleSnapshot"
+                  class="item-image" />
+              } @else {
+                <div class="item-image-placeholder">
+                  <span class="placeholder-icon">&#128722;</span>
+                </div>
+              }
+            </a>
+
+            <div class="item-details">
+              <div class="item-header">
+                <a [routerLink]="['/urun', item.productId]" class="item-title">
+                  {{ item.productTitleSnapshot }}
+                </a>
+                @if (item.sellerNameSnapshot) {
+                  <span class="item-seller">{{ item.sellerNameSnapshot }}</span>
+                }
+              </div>
+
+              <div class="item-meta">
+                <span class="item-unit-price">{{ item.unitPriceSnapshot | scCurrency }}</span>
+                @if (item.cargoPriceSnapshot === 0) {
+                  <span class="free-shipping-badge">Ucretsiz kargo</span>
+                }
+              </div>
+
+              <div class="item-actions">
+                <sc-quantity-stepper
+                  [value]="item.quantity"
+                  [min]="1"
+                  [max]="99"
+                  (valueChange)="onQuantityChange(item.offerId, $event)" />
+                <button type="button" class="btn-remove" (click)="remove(item.offerId)">
+                  <span class="remove-icon">&#10005;</span>
+                  {{ 'cart.remove' | t }}
+                </button>
+              </div>
+            </div>
+
+            <div class="item-total">
+              <sc-price [price]="item.subtotal" size="base" />
+            </div>
+          </article>
+        }
+      </section>
+
+      <!-- Order summary sidebar -->
+      <aside class="cart-summary">
+        <h3 class="summary-title">Siparis ozeti</h3>
+
+        <div class="summary-rows">
+          <div class="summary-row">
+            <span>{{ 'common.subtotal' | t }}</span>
+            <span>{{ cart.subtotal() | scCurrency }}</span>
+          </div>
+
+          <div class="summary-row">
+            <span>Kargo</span>
+            <span class="free-text">Ucretsiz</span>
+          </div>
+
+          @if (cart.discount() > 0) {
+            <div class="summary-row discount-row">
+              <span>{{ 'common.discount' | t }}</span>
+              <span>&minus;{{ cart.discount() | scCurrency }}</span>
+            </div>
+          }
+
+          <div class="summary-row total-row">
+            <span>{{ 'common.total' | t }}</span>
+            <span>{{ (cart.subtotal() - cart.discount()) | scCurrency }}</span>
+          </div>
+        </div>
+
+        <!-- Coupon input -->
+        <div class="coupon-section">
+          <div class="coupon-input-group">
+            <input
+              type="text"
+              class="coupon-input"
+              [placeholder]="'cart.couponCode' | t"
+              [ngModel]="couponCode()"
+              (ngModelChange)="couponCode.set($event)" />
+            <button
+              type="button"
+              class="coupon-btn"
+              (click)="applyCoupon()"
+              [disabled]="!couponCode().trim()">
+              {{ 'cart.couponApply' | t }}
+            </button>
+          </div>
+          @if (cart.coupon(); as c) {
+            <div class="coupon-applied">
+              <span class="coupon-badge">{{ c.code }}</span>
+              <span class="coupon-discount">&minus;{{ cart.discount() | scCurrency }}</span>
+            </div>
+          }
+        </div>
+
+        <button type="button" class="btn-checkout" (click)="proceed()">
+          Odemeye Gec
+          <span class="btn-arrow">&rarr;</span>
+        </button>
+
+        <div class="trust-badges">
+          <span class="trust-item">&#128274; 3D Secure</span>
+          <span class="trust-divider">&middot;</span>
+          <span class="trust-item">KVKK uyumlu guvenli odeme</span>
+        </div>
+      </aside>
+    </div>
+  }
+</div>

@@ -1,0 +1,141 @@
+h2 {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.spinner-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ord {
+  display: block;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s, border-color 0.2s;
+
+  &:hover {
+    box-shadow: var(--sc-shadow);
+    border-color: var(--sc-primary-200, var(--sc-border));
+  }
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--sc-border);
+}
+
+.num {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.date {
+  font-size: 12px;
+  color: var(--sc-text-faint, var(--sc-text-muted));
+  margin-top: 4px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--sc-surface-2);
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.04) 0 6px,
+      transparent 6px 12px
+    ),
+    var(--sc-surface-2);
+}
+
+.ttl {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+  margin-top: 2px;
+}
+
+.price {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--sc-border);
+}
+
+.total {
+  span {
+    color: var(--sc-text-muted);
+    margin-right: 8px;
+    font-size: 14px;
+  }
+
+  strong {
+    font-size: 18px;
+  }
+}
+
+.detail-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-primary);
+}
+
+sc-pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}

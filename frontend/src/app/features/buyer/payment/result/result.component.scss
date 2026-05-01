@@ -1,0 +1,253 @@
+// ─── Container ──────────────────────────────────────
+.result-container {
+  display: flex;
+  justify-content: center;
+  padding: 64px 24px;
+  min-height: 60vh;
+}
+
+// ─── Card ───────────────────────────────────────────
+.result-card {
+  max-width: 500px;
+  width: 100%;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg, 12px);
+  padding: 48px 40px;
+  text-align: center;
+}
+
+// ─── Icon animations ────────────────────────────────
+.result-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 28px;
+}
+
+.result-svg {
+  width: 80px;
+  height: 80px;
+}
+
+.result-circle {
+  stroke-width: 2;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: circle-draw 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.success-circle {
+  stroke: var(--sc-success);
+}
+
+.failure-circle {
+  stroke: var(--sc-danger);
+}
+
+.result-check {
+  stroke: var(--sc-success);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: circle-draw 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+.result-cross {
+  stroke: var(--sc-danger);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: circle-draw 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+@keyframes circle-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+// ─── Pending spinner ────────────────────────────────
+.pending-spinner {
+  margin-bottom: 24px;
+}
+
+.progress-bar {
+  width: 200px;
+  height: 4px;
+  background: var(--sc-surface-2);
+  border-radius: 2px;
+  margin: 24px auto 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 30%;
+  background: var(--sc-primary);
+  border-radius: 2px;
+  animation: progress-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(700%);
+  }
+}
+
+// ─── Typography ─────────────────────────────────────
+.result-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.success-text {
+  color: var(--sc-success);
+}
+
+.failure-text {
+  color: var(--sc-danger);
+}
+
+.result-subtitle {
+  font-size: 15px;
+  color: var(--sc-text-muted);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+// ─── Amount display ─────────────────────────────────
+.amount-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+  margin-bottom: 20px;
+}
+
+.amount-label {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.amount-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--sc-success);
+}
+
+// ─── Payment details ────────────────────────────────
+.payment-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius-sm);
+  font-size: 14px;
+}
+
+.detail-label {
+  color: var(--sc-text-muted);
+}
+
+.detail-value {
+  font-weight: 600;
+}
+
+// ─── Error code ─────────────────────────────────────
+.error-code {
+  font-size: 13px;
+  color: var(--sc-text-muted);
+  margin-bottom: 24px;
+
+  code {
+    background: var(--sc-surface-2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--sc-mono, monospace);
+    font-size: 12px;
+  }
+}
+
+// ─── Actions ────────────────────────────────────────
+.result-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 28px;
+  background: var(--sc-primary);
+  color: #fff;
+  border-radius: var(--sc-radius);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: filter 0.15s;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 28px;
+  background: var(--sc-surface-2);
+  color: var(--sc-text);
+  border-radius: var(--sc-radius);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--sc-border);
+  }
+}
+
+// ─── Responsive ─────────────────────────────────────
+@media (max-width: 640px) {
+  .result-container {
+    padding: 32px 16px;
+  }
+
+  .result-card {
+    padding: 32px 24px;
+  }
+
+  .amount-value {
+    font-size: 22px;
+  }
+
+  .result-actions {
+    flex-direction: column;
+
+    .btn-primary,
+    .btn-secondary {
+      justify-content: center;
+    }
+  }
+}

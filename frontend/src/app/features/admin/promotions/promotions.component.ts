@@ -1,130 +1,37 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { CouponApi } from '@core/api/coupon.api';
-import { CouponResponse } from '@core/models/coupon.types';
+import { CouponResponse, CreateCouponRequest, DiscountType } from '@core/models/coupon.types';
 import { ToastService } from '@core/toast.service';
 import { TPipe } from '@shared/i18n.pipe';
+import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
+import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
+import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
+import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog.component';
+import { ModalComponent } from '@shared/ui/modal/modal.component';
+import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
+import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'sc-admin-promotions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, TPipe],
-  template: `
-    <h1>{{ 'admin.promotions' | t }}</h1>
-
-    @if (loading()) {
-      <p class="muted">{{ 'common.loading' | t }}</p>
-    } @else if (coupons().length === 0) {
-      <p class="muted">{{ 'common.empty' | t }}</p>
-    } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>Kod</th>
-            <th>Ad</th>
-            <th>Tip</th>
-            <th>Değer</th>
-            <th>Geçerli</th>
-            <th>Kullanım</th>
-            <th>Durum</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (c of coupons(); track c.id) {
-            <tr>
-              <td><code>{{ c.code }}</code></td>
-              <td>{{ c.name }}</td>
-              <td>{{ c.discountType }}</td>
-              <td>{{ formatValue(c) }}</td>
-              <td>
-                <span class="muted">{{ c.validFrom | date: 'shortDate' }} →</span>
-                <br />
-                <span class="muted">{{ c.validUntil | date: 'shortDate' }}</span>
-              </td>
-              <td>{{ c.timesUsed }} / {{ c.totalUsageLimit ?? '∞' }}</td>
-              <td>
-                <span class="pill" [class]="c.active ? 'pill-success' : 'pill-inactive'">
-                  {{ c.active ? 'Aktif' : 'Pasif' }}
-                </span>
-              </td>
-              <td>
-                @if (c.active) {
-                  <button type="button" (click)="deactivate(c.id)">Kapat</button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  `,
-  styles: [
-    `
-      h1 {
-        margin: 0 0 24px;
-      }
-      table {
-        width: 100%;
-        background: var(--sc-surface);
-        border: 1px solid var(--sc-border);
-        border-radius: var(--sc-radius);
-        border-collapse: collapse;
-      }
-      th,
-      td {
-        text-align: left;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--sc-border);
-        font-size: 14px;
-      }
-      th {
-        background: var(--sc-surface-2);
-      }
-      tr:last-child td {
-        border-bottom: 0;
-      }
-      code {
-        font-size: 12px;
-        background: var(--sc-surface-2);
-        padding: 2px 6px;
-        border-radius: 4px;
-      }
-      .pill {
-        font-size: 12px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-weight: 600;
-      }
-      .pill-success {
-        background: #d1fae5;
-        color: #047857;
-      }
-      .pill-inactive {
-        background: #e5e7eb;
-        color: #4b5563;
-      }
-      button {
-        background: white;
-        border: 1px solid var(--sc-border);
-        padding: 6px 12px;
-        border-radius: var(--sc-radius-sm);
-        cursor: pointer;
-        font-size: 13px;
-      }
-      button:hover {
-        background: var(--sc-danger);
-        color: white;
-        border-color: var(--sc-danger);
-      }
-      .muted {
-        color: var(--sc-text-muted);
-        font-size: 12px;
-      }
-    `,
+  imports: [
+    DatePipe,
+    FormsModule,
+    TPipe,
+    SpinnerComponent,
+    EmptyStateComponent,
+    StatusBadgeComponent,
+    ConfirmDialogComponent,
+    ModalComponent,
+    FormFieldComponent,
+    CurrencyFormatPipe,
   ],
+  templateUrl: './promotions.component.html',
+  styleUrls: ['./promotions.component.scss'],
 })
 export class AdminPromotionsComponent implements OnInit {
   private readonly couponApi = inject(CouponApi);
@@ -132,6 +39,20 @@ export class AdminPromotionsComponent implements OnInit {
 
   readonly coupons = signal<CouponResponse[]>([]);
   readonly loading = signal(true);
+  readonly creating = signal(false);
+  readonly showCreateModal = signal(false);
+  readonly deactivateDialogOpen = signal(false);
+
+  private deactivateTargetId: string | null = null;
+
+  newCoupon: Partial<CreateCouponRequest> & { code: string; name: string; discountType: DiscountType; discountValue: number; validFrom: string; validUntil: string } = {
+    code: '',
+    name: '',
+    discountType: 'PERCENTAGE',
+    discountValue: 0,
+    validFrom: '',
+    validUntil: '',
+  };
 
   async ngOnInit(): Promise<void> {
     await this.refresh();
@@ -147,13 +68,48 @@ export class AdminPromotionsComponent implements OnInit {
     }
   }
 
-  async deactivate(id: string): Promise<void> {
+  confirmDeactivate(id: string): void {
+    this.deactivateTargetId = id;
+    this.deactivateDialogOpen.set(true);
+  }
+
+  async onDeactivateConfirmed(): Promise<void> {
+    this.deactivateDialogOpen.set(false);
+    if (!this.deactivateTargetId) return;
     try {
-      const updated = await firstValueFrom(this.couponApi.deactivate(id));
-      this.coupons.update((arr) => arr.map((c) => (c.id === id ? updated : c)));
-      this.toast.show('Kupon kapatıldı', 'success');
+      const updated = await firstValueFrom(this.couponApi.deactivate(this.deactivateTargetId));
+      this.coupons.update((arr) => arr.map((c) => (c.id === this.deactivateTargetId ? updated : c)));
+      this.toast.show('Kupon kapatildi', 'success');
     } catch {
       /* error.interceptor handles toast */
+    } finally {
+      this.deactivateTargetId = null;
+    }
+  }
+
+  async createCoupon(): Promise<void> {
+    this.creating.set(true);
+    try {
+      const request: CreateCouponRequest = {
+        code: this.newCoupon.code,
+        name: this.newCoupon.name,
+        discountType: this.newCoupon.discountType,
+        discountValue: this.newCoupon.discountValue,
+        validFrom: this.newCoupon.validFrom,
+        validUntil: this.newCoupon.validUntil,
+        totalUsageLimit: this.newCoupon.totalUsageLimit,
+        perUserLimit: this.newCoupon.perUserLimit,
+        minimumOrderAmount: this.newCoupon.minimumOrderAmount,
+      };
+      const created = await firstValueFrom(this.couponApi.create(request));
+      this.coupons.update((arr) => [created, ...arr]);
+      this.toast.show('Kupon olusturuldu', 'success');
+      this.showCreateModal.set(false);
+      this.resetForm();
+    } catch {
+      /* error.interceptor handles toast */
+    } finally {
+      this.creating.set(false);
     }
   }
 
@@ -162,6 +118,17 @@ export class AdminPromotionsComponent implements OnInit {
     if (c.discountType === 'FIXED_AMOUNT') {
       return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(c.discountValue);
     }
-    return 'Ücretsiz Kargo';
+    return 'Ucretsiz Kargo';
+  }
+
+  private resetForm(): void {
+    this.newCoupon = {
+      code: '',
+      name: '',
+      discountType: 'PERCENTAGE',
+      discountValue: 0,
+      validFrom: '',
+      validUntil: '',
+    };
   }
 }

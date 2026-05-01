@@ -1,0 +1,25 @@
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" routerLink="/admin">{{ 'nav.admin' | t }}</a>
+
+    <nav>
+      <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ 'admin.overview' | t }}</a>
+      <a routerLink="/admin/kategoriler" routerLinkActive="active">{{ 'admin.categoryManagement' | t }}</a>
+      <a routerLink="/admin/fraud" routerLinkActive="active">{{ 'admin.fraud' | t }}</a>
+      <a routerLink="/admin/ai-kullanim" routerLinkActive="active">{{ 'admin.aiUsage' | t }}</a>
+      <a routerLink="/admin/promosyonlar" routerLinkActive="active">{{ 'admin.promotions' | t }}</a>
+      <a routerLink="/admin/degerlendirme-moderasyon" routerLinkActive="active">{{ 'admin.reviewModeration' | t }}</a>
+      <a routerLink="/admin/degerlendirme-raporlari" routerLinkActive="active">{{ 'admin.reviewReports' | t }}</a>
+      <a href="http://localhost:3000" target="_blank" rel="noopener">{{ 'admin.systemHealth' | t }} &nearr;</a>
+    </nav>
+
+    <div class="bottom">
+      <a routerLink="/">&larr; {{ 'nav.home' | t }}</a>
+      <button type="button" (click)="logout()">{{ 'nav.logout' | t }}</button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

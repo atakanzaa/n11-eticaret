@@ -1,7 +1,17 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  signal,
+  computed,
+  DestroyRef,
+} from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProductApi } from '@core/api/product.api';
 import { OfferApi } from '@core/api/offer.api';
 import { CategoryApi } from '@core/api/category.api';
@@ -11,10 +21,13 @@ import { BrandResponse } from '@core/models/brand.types';
 import { ProductResponse } from '@core/models/product.types';
 import { OfferResponse } from '@core/models/offer.types';
 import { Page } from '@core/models/common.types';
-import { ProductCardComponent } from '@shared/ui/product-card.component';
-import { TPipe } from '@shared/i18n.pipe';
+import { ProductCardComponent } from '@shared/ui/product-card/product-card.component';
+import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
+import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
+import { PaginationComponent } from '@shared/ui/pagination/pagination.component';
+import { BreadcrumbComponent, BreadcrumbItem } from '@shared/ui/breadcrumb/breadcrumb.component';
 
-interface ProductWithOffer {
+export interface ProductWithOffer {
   product: ProductResponse;
   offer: OfferResponse | null;
 }
@@ -23,147 +36,18 @@ interface ProductWithOffer {
   selector: 'sc-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ProductCardComponent, TPipe],
-  template: `
-    <div class="layout">
-      <aside class="filters">
-        <h3>{{ 'common.filter' | t }}</h3>
-
-        <div class="group">
-          <h4>Kategori</h4>
-          <select [(ngModel)]="selectedCategoryId" (change)="onFilterChange()">
-            <option [ngValue]="undefined">Tümü</option>
-            @for (c of categories(); track c.id) {
-              <option [ngValue]="c.id">{{ c.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="group">
-          <h4>Marka</h4>
-          <select [(ngModel)]="selectedBrandId" (change)="onFilterChange()">
-            <option [ngValue]="undefined">Tümü</option>
-            @for (b of brands(); track b.id) {
-              <option [ngValue]="b.id">{{ b.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="group">
-          <h4>{{ 'common.sort' | t }}</h4>
-          <select [(ngModel)]="sort" (change)="onFilterChange()">
-            <option value="">Önerilen</option>
-            <option value="title,asc">İsim (A-Z)</option>
-          </select>
-        </div>
-      </aside>
-
-      <section class="results">
-        <header>
-          <h1>{{ heading() }}</h1>
-          @if (page()) {
-            <span class="count">{{ page()!.totalElements }} sonuç</span>
-          }
-        </header>
-
-        @if (loading()) {
-          <p class="muted">{{ 'common.loading' | t }}</p>
-        } @else if (items().length === 0) {
-          <p class="muted">{{ 'common.empty' | t }}</p>
-        } @else {
-          <div class="grid">
-            @for (item of items(); track item.product.id) {
-              <sc-product-card [product]="item.product" [offer]="item.offer" />
-            }
-          </div>
-          @if (page()!.totalPages > 1) {
-            <div class="pager">
-              <button type="button" (click)="prevPage()" [disabled]="page()!.first">{{ 'common.back' | t }}</button>
-              <span>{{ page()!.number + 1 }} / {{ page()!.totalPages }}</span>
-              <button type="button" (click)="nextPage()" [disabled]="page()!.last">{{ 'common.next' | t }}</button>
-            </div>
-          }
-        }
-      </section>
-    </div>
-  `,
-  styles: [
-    `
-      .layout {
-        display: grid;
-        grid-template-columns: 240px 1fr;
-        gap: 24px;
-      }
-      .filters {
-        background: var(--sc-surface);
-        border: 1px solid var(--sc-border);
-        border-radius: var(--sc-radius);
-        padding: 20px;
-        align-self: start;
-        position: sticky;
-        top: 144px;
-      }
-      .filters h3 {
-        margin: 0 0 16px;
-      }
-      .group {
-        margin-bottom: 16px;
-      }
-      .group h4 {
-        margin: 0 0 8px;
-        font-size: 13px;
-        color: var(--sc-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-      .group select {
-        width: 100%;
-        padding: 8px 10px;
-        border: 1px solid var(--sc-border);
-        border-radius: var(--sc-radius-sm);
-      }
-      .results header {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 16px;
-      }
-      .results h1 {
-        font-size: 22px;
-        margin: 0;
-      }
-      .count {
-        color: var(--sc-text-muted);
-        font-size: 14px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 16px;
-      }
-      .muted {
-        color: var(--sc-text-muted);
-      }
-      .pager {
-        display: flex;
-        gap: 16px;
-        justify-content: center;
-        align-items: center;
-        margin-top: 24px;
-      }
-      .pager button {
-        padding: 8px 16px;
-        border: 1px solid var(--sc-border);
-        background: white;
-        border-radius: var(--sc-radius-sm);
-        cursor: pointer;
-      }
-      .pager button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    `,
+  imports: [
+    FormsModule,
+    RouterLink,
+    DecimalPipe,
+    ProductCardComponent,
+    SpinnerComponent,
+    EmptyStateComponent,
+    PaginationComponent,
+    BreadcrumbComponent,
   ],
+  templateUrl: './search.component.html',
+  styleUrls: ['./search.component.scss'],
 })
 export class SearchComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -172,19 +56,52 @@ export class SearchComponent implements OnInit {
   private readonly offerApi = inject(OfferApi);
   private readonly categoryApi = inject(CategoryApi);
   private readonly brandApi = inject(BrandApi);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly categories = signal<CategoryResponse[]>([]);
   readonly brands = signal<BrandResponse[]>([]);
   readonly items = signal<ProductWithOffer[]>([]);
-  readonly page = signal<Page<ProductResponse> | null>(null);
+  readonly pageData = signal<Page<ProductResponse> | null>(null);
   readonly loading = signal(true);
-  readonly heading = signal('Tüm ürünler');
+  readonly heading = signal('Tum urunler');
 
-  selectedCategoryId: string | undefined;
-  selectedBrandId: string | undefined;
-  sort = '';
+  readonly selectedCategoryId = signal<string | undefined>(undefined);
+  readonly selectedBrandId = signal<string | undefined>(undefined);
+  readonly sort = signal('');
+  readonly view = signal<'grid' | 'list'>('grid');
+  readonly priceMin = signal<number | null>(null);
+  readonly priceMax = signal<number | null>(null);
+  readonly inStockOnly = signal(false);
+  readonly selectedMinRating = signal<number | null>(null);
 
-  private currentPage = 0;
+  readonly currentPage = signal(0);
+
+  readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    const items: BreadcrumbItem[] = [{ label: 'Anasayfa', route: ['/'] }];
+    items.push({ label: this.heading() });
+    return items;
+  });
+
+  readonly totalPages = computed(() => this.pageData()?.totalPages ?? 0);
+  readonly totalElements = computed(() => this.pageData()?.totalElements ?? 0);
+  readonly isFirst = computed(() => this.pageData()?.first ?? true);
+  readonly isLast = computed(() => this.pageData()?.last ?? true);
+
+  readonly activeFilterCount = computed(() => {
+    let count = 0;
+    if (this.selectedCategoryId()) count++;
+    if (this.selectedBrandId()) count++;
+    if (this.priceMin() !== null) count++;
+    if (this.priceMax() !== null) count++;
+    if (this.inStockOnly()) count++;
+    if (this.selectedMinRating() !== null) count++;
+    return count;
+  });
+
+  onMinRatingChange(value: number | null): void {
+    this.selectedMinRating.set(value);
+    this.onFilterChange();
+  }
 
   async ngOnInit(): Promise<void> {
     const [cats, brs] = await Promise.all([
@@ -194,46 +111,91 @@ export class SearchComponent implements OnInit {
     this.categories.set(cats);
     this.brands.set(brs);
 
-    this.route.params.subscribe(async (params) => {
-      const slug = params['slug'];
-      if (slug) {
-        try {
-          const cat = await firstValueFrom(this.categoryApi.bySlug(slug));
-          this.selectedCategoryId = cat.id;
-          this.heading.set(cat.name);
-        } catch {
-          /* category not found, fallthrough */
+    this.route.params
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async (params) => {
+        const slug = params['slug'];
+        if (slug) {
+          try {
+            const cat = await firstValueFrom(this.categoryApi.bySlug(slug));
+            this.selectedCategoryId.set(cat.id);
+            this.heading.set(cat.name);
+          } catch {
+            /* category not found, fallthrough */
+          }
         }
-      }
-      this.loadResults();
-    });
+        this.loadResults();
+      });
 
-    this.route.queryParams.subscribe((qp) => {
-      if (qp['q']) {
-        this.heading.set(`"${qp['q']}" için sonuçlar`);
-      }
-      this.loadResults();
-    });
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((qp) => {
+        if (qp['q']) {
+          this.heading.set(`"${qp['q']}" icin sonuclar`);
+        }
+        this.loadResults();
+      });
   }
 
   onFilterChange(): void {
-    this.currentPage = 0;
+    this.currentPage.set(0);
     this.loadResults();
   }
 
-  prevPage(): void {
-    if (this.currentPage > 0) {
-      this.currentPage--;
-      this.loadResults();
-    }
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.loadResults();
   }
 
-  nextPage(): void {
-    const p = this.page();
-    if (p && !p.last) {
-      this.currentPage++;
-      this.loadResults();
-    }
+  onCategoryChange(id: string | undefined): void {
+    this.selectedCategoryId.set(id || undefined);
+    this.onFilterChange();
+  }
+
+  onBrandChange(id: string | undefined): void {
+    this.selectedBrandId.set(id || undefined);
+    this.onFilterChange();
+  }
+
+  onSortChange(value: string): void {
+    this.sort.set(value);
+    this.onFilterChange();
+  }
+
+  onPriceMinChange(value: string): void {
+    this.priceMin.set(value ? Number(value) : null);
+    this.onFilterChange();
+  }
+
+  onPriceMaxChange(value: string): void {
+    this.priceMax.set(value ? Number(value) : null);
+    this.onFilterChange();
+  }
+
+  onInStockChange(value: boolean): void {
+    this.inStockOnly.set(value);
+    this.onFilterChange();
+  }
+
+  clearFilters(): void {
+    this.selectedCategoryId.set(undefined);
+    this.selectedBrandId.set(undefined);
+    this.priceMin.set(null);
+    this.priceMax.set(null);
+    this.inStockOnly.set(false);
+    this.selectedMinRating.set(null);
+    this.sort.set('');
+    this.onFilterChange();
+  }
+
+  getCategoryName(id: string | undefined): string {
+    if (!id) return '';
+    return this.categories().find((c) => c.id === id)?.name ?? '';
+  }
+
+  getBrandName(id: string | undefined): string {
+    if (!id) return '';
+    return this.brands().find((b) => b.id === id)?.name ?? '';
   }
 
   private async loadResults(): Promise<void> {
@@ -243,20 +205,22 @@ export class SearchComponent implements OnInit {
       const result = await firstValueFrom(
         this.productApi.list({
           query: queryText,
-          categoryId: this.selectedCategoryId,
-          brandId: this.selectedBrandId,
-          page: this.currentPage,
+          categoryId: this.selectedCategoryId(),
+          brandId: this.selectedBrandId(),
+          minRating: this.selectedMinRating() ?? undefined,
+          page: this.currentPage(),
           size: 24,
-          sort: this.sort || undefined,
+          sort: this.sort() || undefined,
         }),
       );
-      this.page.set(result);
+      this.pageData.set(result);
 
       const enriched = await Promise.all(
         result.content.map(async (product) => {
           try {
             const offers = await firstValueFrom(this.offerApi.byProduct(product.id));
-            const cheapest = offers.find((o) => o.status === 'ACTIVE') ?? offers[0] ?? null;
+            const cheapest =
+              offers.find((o) => o.status === 'ACTIVE') ?? offers[0] ?? null;
             return { product, offer: cheapest };
           } catch {
             return { product, offer: null };

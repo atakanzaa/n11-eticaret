@@ -1,0 +1,275 @@
+// ─── Container ──────────────────────────────────────
+.success-container {
+  display: flex;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.loading-wrap {
+  padding: 80px 0;
+}
+
+// ─── Card ───────────────────────────────────────────
+.success-card {
+  max-width: 560px;
+  width: 100%;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg, 12px);
+  padding: 48px 40px;
+  text-align: center;
+}
+
+// ─── Animated check ─────────────────────────────────
+.check-circle {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 24px;
+}
+
+.check-svg {
+  width: 72px;
+  height: 72px;
+}
+
+.check-bg {
+  stroke: var(--sc-success);
+  stroke-width: 2;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: stroke-anim 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.check-mark {
+  stroke: var(--sc-success);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke-anim 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+@keyframes stroke-anim {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+// ─── Titles ─────────────────────────────────────────
+.success-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--sc-success);
+  margin: 0 0 8px;
+}
+
+.success-subtitle {
+  font-size: 15px;
+  color: var(--sc-text-muted);
+  margin: 0 0 32px;
+}
+
+// ─── Order info ─────────────────────────────────────
+.order-info {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 20px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+  margin-bottom: 24px;
+}
+
+.order-number,
+.order-total {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-label {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.order-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--sc-mono, monospace);
+}
+
+.order-total-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--sc-primary);
+}
+
+// ─── Order items ────────────────────────────────────
+.order-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.order-item {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius-sm);
+}
+
+.order-item-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--sc-surface);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.order-item-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  opacity: 0.3;
+}
+
+.order-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.order-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-item-qty {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+}
+
+.order-item-price {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+// ─── Shipping info ──────────────────────────────────
+.shipping-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-radius);
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.shipping-icon {
+  font-size: 24px;
+}
+
+.shipping-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shipping-label {
+  font-size: 12px;
+  color: var(--sc-text-muted);
+}
+
+.shipping-carrier {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+// ─── Actions ────────────────────────────────────────
+.success-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 28px;
+  background: var(--sc-primary);
+  color: #fff;
+  border-radius: var(--sc-radius);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: filter 0.15s;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 28px;
+  background: var(--sc-surface-2);
+  color: var(--sc-text);
+  border-radius: var(--sc-radius);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--sc-border);
+  }
+}
+
+// ─── Responsive ─────────────────────────────────────
+@media (max-width: 640px) {
+  .success-container {
+    padding: 24px 16px;
+  }
+
+  .success-card {
+    padding: 32px 24px;
+  }
+
+  .order-info {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .success-actions {
+    flex-direction: column;
+
+    .btn-primary,
+    .btn-secondary {
+      justify-content: center;
+    }
+  }
+}
