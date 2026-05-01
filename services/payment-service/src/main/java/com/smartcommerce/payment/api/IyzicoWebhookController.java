@@ -65,9 +65,10 @@ public class IyzicoWebhookController {
         webhookEvent = webhookEventRepository.save(webhookEvent);
 
         var resolvedStatus = "failure";
+        java.util.UUID internalPaymentId = null;
         try {
-            paymentService.handle3dsCallback(new IyzicoCallbackRequest(status, paymentId,
-                conversationData, conversationId, mdStatus));
+            internalPaymentId = paymentService.handle3dsCallback(new IyzicoCallbackRequest(
+                status, paymentId, conversationData, conversationId, mdStatus));
             webhookEvent.setProcessed(true);
             webhookEvent.setProcessedAt(Instant.now());
             webhookEventRepository.save(webhookEvent);
@@ -78,7 +79,10 @@ public class IyzicoWebhookController {
             webhookEventRepository.save(webhookEvent);
         }
 
-        var redirectUri = URI.create(frontendBaseUrl + "/odeme/sonuc/" + paymentId
+        // Redirect to frontend with INTERNAL UUID (not iyzico's numeric provider id),
+        // because the SPA polls GET /api/payments/{uuid} which expects UUID.
+        var redirectId = internalPaymentId != null ? internalPaymentId.toString() : paymentId;
+        var redirectUri = URI.create(frontendBaseUrl + "/odeme/sonuc/" + redirectId
             + "?status=" + resolvedStatus);
         return ResponseEntity.status(HttpStatus.SEE_OTHER)
             .header(HttpHeaders.LOCATION, redirectUri.toString())

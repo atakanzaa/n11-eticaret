@@ -206,7 +206,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public void handle3dsCallback(IyzicoCallbackRequest callback) {
+    public UUID handle3dsCallback(IyzicoCallbackRequest callback) {
         log.info("Received 3DS callback: paymentId={}, status={}, conversationId={}",
             callback.paymentId(), callback.status(), callback.conversationId());
 
@@ -216,7 +216,7 @@ public class PaymentService {
 
         if (payment.getStatus() == PaymentStatus.SUCCEEDED || payment.getStatus() == PaymentStatus.FAILED) {
             log.info("Payment {} already in terminal state {}, ignoring callback", payment.getId(), payment.getStatus());
-            return;
+            return payment.getId();
         }
 
         if (!"success".equals(callback.status())) {
@@ -226,7 +226,7 @@ public class PaymentService {
             payment.setFailedAt(Instant.now());
             paymentRepository.save(payment);
             publishPaymentFailed(payment, "3DS_AUTHENTICATION_FAILED", callback.mdStatus());
-            return;
+            return payment.getId();
         }
 
         if (callback.paymentId() != null && !callback.paymentId().isBlank()) {
@@ -237,6 +237,7 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         capturePayment(payment, callback);
+        return payment.getId();
     }
 
     private void capturePayment(Payment payment, IyzicoCallbackRequest callback) {

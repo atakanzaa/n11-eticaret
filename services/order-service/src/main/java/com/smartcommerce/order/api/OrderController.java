@@ -58,6 +58,21 @@ public class OrderController {
         return orderQueryService.getSellerKpi(sellerId);
     }
 
+    @GetMapping("/api/orders/seller/{sellerId}")
+    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+    public Page<OrderResponse> getSellerOrders(@PathVariable UUID sellerId,
+                                               @PageableDefault(size = 20) Pageable pageable) {
+        return orderQueryService.getSellerOrders(sellerId, pageable);
+    }
+
+    @PatchMapping("/api/orders/{orderId}/ship")
+    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+    public OrderResponse markShipped(@AuthenticationPrincipal String userId,
+                                     @RequestParam UUID sellerId,
+                                     @PathVariable UUID orderId) {
+        return orderQueryService.markShipped(sellerId, orderId);
+    }
+
     @GetMapping("/api/orders/seller/{sellerId}/revenue")
     @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
     public List<RevenuePoint> getSellerRevenue(@PathVariable UUID sellerId,

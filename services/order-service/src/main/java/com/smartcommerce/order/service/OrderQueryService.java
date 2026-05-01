@@ -7,9 +7,11 @@ import com.smartcommerce.order.api.dto.OrderResponse;
 import com.smartcommerce.order.api.dto.RevenuePoint;
 import com.smartcommerce.order.api.dto.SellerOrderKpiResponse;
 import com.smartcommerce.order.api.mapper.OrderMapper;
+import com.smartcommerce.order.domain.OrderStatus;
 import com.smartcommerce.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,28 @@ public class OrderQueryService {
 
     public Page<OrderResponse> getMyOrders(UUID userId, Pageable pageable) {
         return orderRepository.findByUserId(userId, pageable).map(orderMapper::toResponse);
+    }
+
+    public Page<OrderResponse> getSellerOrders(UUID sellerId, Pageable pageable) {
+        return orderRepository.findDistinctBySellerId(sellerId, pageable).map(orderMapper::toResponse);
+    }
+
+    @Transactional
+    public OrderResponse markShipped(UUID sellerId, UUID orderId) {
+        var order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ORDER_NOT_FOUND, "Order not found"));
+        var ownsItem = order.getItems().stream().anyMatch(i -> sellerId.equals(i.getSellerId()));
+        if (!ownsItem) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN,
+                "Cannot ship an order that has no items from this seller");
+        }
+        var status = order.getStatus();
+        if (status != OrderStatus.CONFIRMED && status != OrderStatus.PROCESSING) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                "Order cannot be shipped from status " + status);
+        }
+        order.setStatus(OrderStatus.SHIPPED);
+        return orderMapper.toResponse(orderRepository.save(order));
     }
 
     public OrderResponse getMyOrder(UUID userId, UUID orderId) {

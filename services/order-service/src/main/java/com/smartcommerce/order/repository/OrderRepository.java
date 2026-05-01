@@ -80,4 +80,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         WHERE o.status = 'CONFIRMED' AND o.created_at >= :since
         """, nativeQuery = true)
     long countActiveSellersSince(@Param("since") Instant since);
+
+    /** Distinct orders that contain at least one item from the seller. */
+    @Query(value = """
+        SELECT DISTINCT o.* FROM orders o
+        JOIN order_items oi ON oi.order_id = o.id
+        WHERE oi.seller_id = :sellerId
+        ORDER BY o.created_at DESC
+        """,
+        countQuery = "SELECT COUNT(DISTINCT o.id) FROM orders o JOIN order_items oi ON oi.order_id = o.id WHERE oi.seller_id = :sellerId",
+        nativeQuery = true)
+    Page<Order> findDistinctBySellerId(@Param("sellerId") UUID sellerId, Pageable pageable);
 }
