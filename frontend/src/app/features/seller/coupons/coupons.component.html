@@ -1,0 +1,112 @@
+<div class="page-header">
+  <h2>Kuponlarım</h2>
+  <button type="button" class="btn primary" (click)="openCreateModal()">+ Yeni Kupon</button>
+</div>
+
+@if (loading()) {
+  <sc-spinner size="lg" />
+} @else if (coupons().length === 0) {
+  <sc-empty-state icon="🎟️" title="Henüz kupon yok"
+                  description="İlk kuponunuzu oluşturun ve müşterilerinize indirim sunun." />
+} @else {
+  <table class="coupons-table">
+    <thead>
+      <tr>
+        <th>Kod</th>
+        <th>Ad</th>
+        <th>İndirim</th>
+        <th>Geçerlilik</th>
+        <th>Kullanım</th>
+        <th>Durum</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of coupons(); track c.id) {
+        <tr>
+          <td><code>{{ c.code }}</code></td>
+          <td>{{ c.name }}</td>
+          <td>{{ formatDiscount(c) }}</td>
+          <td>{{ c.validFrom | date:'dd MMM' }} → {{ c.validUntil | date:'dd MMM' }}</td>
+          <td>{{ c.timesUsed }}{{ c.totalUsageLimit ? ' / ' + c.totalUsageLimit : '' }}</td>
+          <td>
+            <span class="badge" [class.active]="c.active" [class.inactive]="!c.active">
+              {{ c.active ? 'Aktif' : 'Pasif' }}
+            </span>
+          </td>
+          <td>
+            @if (c.active) {
+              <button type="button" class="btn-icon danger" (click)="deactivate(c)" title="Devre dışı bırak">
+                ⏸
+              </button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+<sc-modal [open]="showCreateModal()" title="Yeni Kupon" size="lg" (closed)="closeCreateModal()">
+  <form (submit)="$event.preventDefault()">
+    <div class="form-row">
+      <sc-form-field label="Kupon Kodu" [required]="true" hint="Müşterinin sepete gireceği kod">
+        <input [(ngModel)]="form.code" name="couponCode" placeholder="Örn: YAZ2026" maxlength="50" />
+      </sc-form-field>
+      <sc-form-field label="Ad" [required]="true">
+        <input [(ngModel)]="form.name" name="couponName" placeholder="Yaz İndirimi" />
+      </sc-form-field>
+    </div>
+
+    <sc-form-field label="Açıklama">
+      <input [(ngModel)]="form.description" name="couponDesc" placeholder="Açıklama (opsiyonel)" />
+    </sc-form-field>
+
+    <div class="form-row">
+      <sc-form-field label="İndirim Tipi" [required]="true">
+        <select [ngModel]="form.discountType" (ngModelChange)="setDiscountType($event)" name="discountType">
+          <option value="PERCENTAGE">Yüzde (%)</option>
+          <option value="FIXED_AMOUNT">Sabit Tutar (₺)</option>
+          <option value="FREE_SHIPPING">Ücretsiz Kargo</option>
+        </select>
+      </sc-form-field>
+      <sc-form-field label="İndirim Değeri" [required]="true">
+        <input type="number" [(ngModel)]="form.discountValue" name="discountValue" min="0" step="0.01" />
+      </sc-form-field>
+    </div>
+
+    <div class="form-row">
+      <sc-form-field label="Min. Sepet Tutarı (₺)">
+        <input type="number" [(ngModel)]="form.minimumOrderAmount" name="minOrder" min="0" step="0.01" />
+      </sc-form-field>
+      <sc-form-field label="Maks. İndirim Tutarı (₺)">
+        <input type="number" [(ngModel)]="form.maxDiscountAmount" name="maxDiscount" min="0" step="0.01" />
+      </sc-form-field>
+    </div>
+
+    <div class="form-row">
+      <sc-form-field label="Toplam Kullanım Limiti">
+        <input type="number" [(ngModel)]="form.totalUsageLimit" name="totalLimit" min="1" />
+      </sc-form-field>
+      <sc-form-field label="Kullanıcı Başına Limit">
+        <input type="number" [(ngModel)]="form.perUserLimit" name="perUserLimit" min="1" />
+      </sc-form-field>
+    </div>
+
+    <div class="form-row">
+      <sc-form-field label="Geçerlilik Başlangıcı" [required]="true">
+        <input type="datetime-local" [(ngModel)]="form.validFrom" name="validFrom" />
+      </sc-form-field>
+      <sc-form-field label="Geçerlilik Bitişi" [required]="true">
+        <input type="datetime-local" [(ngModel)]="form.validUntil" name="validUntil" />
+      </sc-form-field>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn" (click)="closeCreateModal()">Vazgeç</button>
+      <button type="button" class="btn primary" [disabled]="saving()" (click)="submitCreate()">
+        @if (saving()) { <sc-spinner size="sm" /> } @else { Oluştur }
+      </button>
+    </div>
+  </form>
+</sc-modal>

@@ -1,0 +1,33 @@
+<h2>Kuponlarım</h2>
+<p class="hint">Aşağıdaki kupon kodlarını sepetinizde uygulayabilirsiniz.</p>
+
+@if (loading()) {
+  <sc-spinner size="lg" />
+} @else if (coupons().length === 0) {
+  <sc-empty-state icon="🎟️" title="Aktif kupon yok"
+                  description="Şu an kullanabileceğiniz bir kupon bulunmuyor." />
+} @else {
+  <div class="coupon-grid">
+    @for (c of coupons(); track c.id) {
+      <div class="coupon-card">
+        <div class="discount-banner">{{ formatDiscount(c) }}</div>
+        <div class="body">
+          <h3>{{ c.name }}</h3>
+          @if (c.description) { <p class="desc">{{ c.description }}</p> }
+          <div class="meta">
+            @if (c.minimumOrderAmount) {
+              <div>Min. sepet: <strong>₺{{ c.minimumOrderAmount }}</strong></div>
+            }
+            <div>Bitiş: <strong>{{ c.validUntil | date:'dd MMM yyyy HH:mm' }}</strong></div>
+          </div>
+          <div class="code-row">
+            <code>{{ c.code }}</code>
+            <button type="button" class="btn primary-outline sm" (click)="copyCode(c.code)">
+              📋 Kopyala
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}

@@ -22,6 +22,14 @@ export class CouponApi {
     return this.http.get<CouponResponse[]>(this.base);
   }
 
+  myCoupons(): Observable<CouponResponse[]> {
+    return this.http.get<CouponResponse[]>(`${this.base}/my`);
+  }
+
+  active(): Observable<CouponResponse[]> {
+    return this.http.get<CouponResponse[]>(`${this.base}/active`);
+  }
+
   create(request: CreateCouponRequest): Observable<CouponResponse> {
     return this.http.post<CouponResponse>(this.base, request);
   }

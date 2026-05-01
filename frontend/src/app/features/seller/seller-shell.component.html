@@ -1,0 +1,28 @@
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" routerLink="/satici">{{ 'nav.seller' | t }}</a>
+
+    <div class="user-info">
+      @if (auth.currentUser(); as user) {
+        <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+      }
+    </div>
+
+    <nav>
+      <a routerLink="/satici" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ 'seller.dashboard' | t }}</a>
+      <a routerLink="/satici/urunler" routerLinkActive="active">{{ 'seller.products' | t }}</a>
+      <a routerLink="/satici/siparisler" routerLinkActive="active">{{ 'seller.orders' | t }}</a>
+      <a routerLink="/satici/degerlendirmeler" routerLinkActive="active">{{ 'seller.reviews' | t }}</a>
+      <a routerLink="/satici/kuponlar" routerLinkActive="active">Kuponlar</a>
+    </nav>
+
+    <div class="bottom">
+      <a routerLink="/">&larr; {{ 'nav.home' | t }}</a>
+      <button type="button" (click)="logout()">{{ 'nav.logout' | t }}</button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

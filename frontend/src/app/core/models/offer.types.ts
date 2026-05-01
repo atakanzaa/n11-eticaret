@@ -1,6 +1,6 @@
-export type OfferStatus = 'ACTIVE' | 'PAUSED' | 'INACTIVE' | 'DELISTED';
+export type OfferStatus = 'ACTIVE' | 'PAUSED' | 'OUT_OF_STOCK' | 'REJECTED';
 
-export type CargoProvider = 'ARAS' | 'YURTICI' | 'MNG' | 'PTT' | 'DEFAULT';
+export type CargoProvider = 'DEFAULT' | 'YURTICI' | 'ARAS' | 'MNG' | 'PTT' | 'UPS' | 'DHL';
 
 export interface OfferResponse {
   id: string;
@@ -27,6 +27,7 @@ export interface CreateOfferRequest {
   cargoPrice: number;
   estimatedDeliveryDays: number;
   freeShippingThreshold?: number;
+  initialStock: number;
 }
 
 export interface UpdateOfferRequest {

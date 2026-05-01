@@ -1,0 +1,103 @@
+@if (loading()) {
+  <div class="loading-wrap">
+    <sc-spinner size="lg" label="Panel yukleniyor..." />
+  </div>
+} @else {
+  <header class="page-header">
+    <div>
+      <h1>{{ seller()?.storeName ?? ('seller.dashboard' | t) }}</h1>
+      <p class="sub">{{ 'seller.dashboard' | t }}</p>
+    </div>
+    <div class="seller-meta">
+      <span class="rating-badge">
+        <span class="star">&#9733;</span>
+        {{ seller()?.rating ?? 0 | number: '1.1-1' }}
+      </span>
+      <span class="rating-count">{{ seller()?.ratingCount ?? 0 | number }} {{ 'common.reviews' | t }}</span>
+    </div>
+  </header>
+
+  <!-- KPI Row -->
+  <section class="kpi-row">
+    <sc-kpi-card
+      [label]="'seller.todayRevenue' | t"
+      [value]="(orderKpi()?.todayRevenue ?? 0) | scCurrency"
+      trend="up"
+    />
+    <sc-kpi-card
+      [label]="'seller.pendingOrders' | t"
+      [value]="orderKpi()?.pendingOrdersCount ?? 0"
+      trend="flat"
+    />
+    <sc-kpi-card
+      [label]="'seller.lowStock' | t"
+      [value]="inventoryStats()?.lowStockCount ?? 0"
+      [trend]="(inventoryStats()?.lowStockCount ?? 0) > 0 ? 'down' : 'flat'"
+    />
+    <sc-kpi-card
+      [label]="'seller.rating' | t"
+      [value]="'&#9733; ' + (seller()?.rating ?? 0 | number: '1.1-1')"
+      trend="up"
+    />
+  </section>
+
+  <!-- Chart + Recent Orders row -->
+  <div class="content-row">
+    <!-- Revenue Chart -->
+    <section class="card chart-card">
+      <div class="card-header">
+        <h3>{{ 'seller.last30DaysRevenue' | t }}</h3>
+      </div>
+      @if (revenue().length > 0) {
+        <svg viewBox="0 0 600 200" class="chart-svg" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="revenueGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="var(--sc-primary)" stop-opacity="0.2" />
+              <stop offset="100%" stop-color="var(--sc-primary)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <polyline [attr.points]="areaPoints()" fill="url(#revenueGrad)" />
+          <polyline
+            [attr.points]="linePoints()"
+            fill="none"
+            stroke="var(--sc-primary)"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+        </svg>
+      } @else {
+        <sc-empty-state icon="📊" title="Henüz veri yok" />
+      }
+    </section>
+
+    <!-- Recent Orders -->
+    <section class="card recent-card">
+      <div class="card-header">
+        <h3>{{ 'seller.recentRevenue' | t }}</h3>
+      </div>
+      @if (recentRevenue().length > 0) {
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>{{ 'common.date' | t }}</th>
+              <th>{{ 'common.revenue' | t }}</th>
+              <th>{{ 'common.orders' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of recentRevenue(); track r.date) {
+              <tr>
+                <td>{{ r.date | date: 'mediumDate' }}</td>
+                <td class="amount">{{ r.amount | scCurrency }}</td>
+                <td>{{ r.orderCount }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <sc-empty-state icon="📋" title="Sipariş verisi bulunamadı" />
+      }
+    </section>
+  </div>
+}

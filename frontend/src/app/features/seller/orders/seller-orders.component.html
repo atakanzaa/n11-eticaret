@@ -1,0 +1,62 @@
+<h1>{{ 'seller.orders' | t }}</h1>
+
+@if (loading()) {
+  <sc-spinner size="lg" [label]="'common.loading' | t" />
+} @else {
+  <section class="kpi-row">
+    <sc-kpi-card
+      [label]="'seller.todayRevenue' | t"
+      [value]="formatPrice(kpi()?.todayRevenue ?? 0)" />
+    <sc-kpi-card
+      [label]="'seller.pendingOrders' | t"
+      [value]="kpi()?.pendingOrdersCount ?? 0" />
+    <sc-kpi-card
+      label="Son 7 Gun Cirosu"
+      [value]="formatPrice(kpi()?.last7DaysRevenue ?? 0)" />
+  </section>
+
+  <h2 class="section-title">Siparişler</h2>
+  @if (orders().length === 0) {
+    <p class="muted">Henüz sipariş yok.</p>
+  } @else {
+    <table class="table orders-table">
+      <thead>
+        <tr>
+          <th>Sipariş No</th>
+          <th>Tarih</th>
+          <th>Tutar</th>
+          <th>Durum</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (o of orders(); track o.id) {
+          <tr>
+            <td><code>{{ o.id.substring(0, 8) }}</code></td>
+            <td>{{ o.createdAt | date: 'short' }}</td>
+            <td class="price">{{ o.grandTotal | scCurrency }}</td>
+            <td>
+              <sc-status-badge [label]="o.status" [variant]="statusVariant(o.status)" />
+            </td>
+            <td>
+              @if (canShip(o.status)) {
+                <button type="button" class="btn primary sm"
+                        [disabled]="shippingId() === o.id"
+                        (click)="ship(o)">
+                  @if (shippingId() === o.id) {
+                    <sc-spinner size="sm" />
+                  } @else {
+                    📦 Kargoya Verildi
+                  }
+                </button>
+              } @else if (o.status === 'SHIPPED' || o.status === 'DELIVERED' || o.status === 'COMPLETED') {
+                <span class="muted">✓ Kargoda</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+}

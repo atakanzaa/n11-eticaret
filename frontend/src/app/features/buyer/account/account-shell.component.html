@@ -1,0 +1,12 @@
+<div class="sc-container wrap">
+  <h1>{{ 'account.title' | t }}</h1>
+  <div class="grid">
+    <aside class="nav">
+      <a routerLink="/hesap/siparislerim" routerLinkActive="active">{{ 'nav.orders' | t }}</a>
+      <a routerLink="/hesap/iadelerim" routerLinkActive="active">{{ 'nav.returns' | t }}</a>
+      <a routerLink="/hesap/kuponlarim" routerLinkActive="active">Kuponlarım</a>
+      <a routerLink="/hesap/profil" routerLinkActive="active">{{ 'nav.profile' | t }}</a>
+    </aside>
+    <main><router-outlet /></main>
+  </div>
+</div>

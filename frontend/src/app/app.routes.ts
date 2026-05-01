@@ -29,6 +29,7 @@ export const routes: Routes = [
           { path: 'siparis/:id', loadComponent: () => import('./features/buyer/account/order-detail/order-detail.component').then(m => m.OrderDetailComponent) },
           { path: 'iade/:id', loadComponent: () => import('./features/buyer/account/return/return.component').then(m => m.ReturnComponent) },
           { path: 'profil', loadComponent: () => import('./features/buyer/account/profile/profile.component').then(m => m.ProfileComponent) },
+          { path: 'kuponlarim', loadComponent: () => import('./features/buyer/account/coupons/coupons.component').then(m => m.BuyerCouponsComponent) },
         ],
       },
     ],
@@ -41,6 +42,7 @@ export const routes: Routes = [
     children: [
       { path: 'giris', loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent) },
       { path: 'kayit', loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent) },
+      { path: 'satici-ol', canActivate: [authGuard], loadComponent: () => import('./features/auth/become-seller/become-seller.component').then(m => m.BecomeSellerComponent) },
       { path: 'yetkisiz', loadComponent: () => import('./features/auth/unauthorized/unauthorized.component').then(m => m.UnauthorizedComponent) },
     ],
   },
@@ -55,6 +57,8 @@ export const routes: Routes = [
       { path: '', loadComponent: () => import('./features/seller/dashboard/dashboard.component').then(m => m.SellerDashboardComponent) },
       { path: 'urunler', loadComponent: () => import('./features/seller/products/products.component').then(m => m.SellerProductsComponent) },
       { path: 'siparisler', loadComponent: () => import('./features/seller/orders/seller-orders.component').then(m => m.SellerOrdersComponent) },
+      { path: 'degerlendirmeler', loadComponent: () => import('./features/seller/review-replies/review-replies.component').then(m => m.SellerReviewRepliesComponent) },
+      { path: 'kuponlar', loadComponent: () => import('./features/seller/coupons/coupons.component').then(m => m.SellerCouponsComponent) },
     ],
   },
 
@@ -66,9 +70,12 @@ export const routes: Routes = [
       import('./features/admin/admin-shell.component').then(m => m.AdminShellComponent),
     children: [
       { path: '', loadComponent: () => import('./features/admin/overview/overview.component').then(m => m.AdminOverviewComponent) },
+      { path: 'kategoriler', loadComponent: () => import('./features/admin/categories/categories.component').then(m => m.AdminCategoriesComponent) },
       { path: 'fraud', loadComponent: () => import('./features/admin/fraud/fraud.component').then(m => m.AdminFraudComponent) },
       { path: 'ai-kullanim', loadComponent: () => import('./features/admin/ai-usage/ai-usage.component').then(m => m.AdminAiUsageComponent) },
       { path: 'promosyonlar', loadComponent: () => import('./features/admin/promotions/promotions.component').then(m => m.AdminPromotionsComponent) },
+      { path: 'degerlendirme-moderasyon', loadComponent: () => import('./features/admin/review-moderation/review-moderation.component').then(m => m.AdminReviewModerationComponent) },
+      { path: 'degerlendirme-raporlari', loadComponent: () => import('./features/admin/review-reports/review-reports.component').then(m => m.AdminReviewReportsComponent) },
     ],
   },
 

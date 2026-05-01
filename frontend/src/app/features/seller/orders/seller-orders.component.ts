@@ -4,139 +4,47 @@ import { firstValueFrom } from 'rxjs';
 import { SellerApi } from '@core/api/seller.api';
 import { OrderApi } from '@core/api/order.api';
 import { SellerDto, SellerOrderKpiResponse, RevenuePoint } from '@core/models/seller.types';
+import { OrderResponse } from '@core/models/order.types';
+import { ToastService } from '@core/toast.service';
 import { TPipe } from '@shared/i18n.pipe';
+import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
+import { KpiCardComponent } from '@shared/ui/kpi-card/kpi-card.component';
+import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
+import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
 
-/**
- * Seller's own orders view. The backend doesn't ship a dedicated
- * "list-orders-for-this-seller" endpoint (a marketplace order has multiple
- * sellers per line), so this view re-uses the seller-side KPI/revenue
- * endpoints we already built and shows a per-day breakdown. For a richer
- * list we'd add `GET /api/orders/seller/{id}/items` later.
- */
 @Component({
   selector: 'sc-seller-orders',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, TPipe],
-  template: `
-    <h1>{{ 'seller.orders' | t }}</h1>
-
-    @if (loading()) {
-      <p class="muted">{{ 'common.loading' | t }}</p>
-    } @else {
-      <section class="cards">
-        <article class="card">
-          <span class="label">{{ 'seller.todayRevenue' | t }}</span>
-          <span class="value">{{ formatPrice(kpi()?.todayRevenue ?? 0) }}</span>
-        </article>
-        <article class="card">
-          <span class="label">{{ 'seller.pendingOrders' | t }}</span>
-          <span class="value">{{ kpi()?.pendingOrdersCount ?? 0 }}</span>
-        </article>
-        <article class="card">
-          <span class="label">Son 7 Gün Cirosu</span>
-          <span class="value">{{ formatPrice(kpi()?.last7DaysRevenue ?? 0) }}</span>
-        </article>
-      </section>
-
-      @if (revenue().length > 0) {
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Tarih</th>
-              <th>Ciro</th>
-              <th>Sipariş</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of revenue(); track p.date) {
-              <tr>
-                <td>{{ p.date | date: 'mediumDate' }}</td>
-                <td>{{ formatPrice(p.amount) }}</td>
-                <td>{{ p.orderCount }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-    }
-  `,
-  styles: [
-    `
-      h1 {
-        margin: 0 0 24px;
-      }
-      .cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
-        margin-bottom: 32px;
-      }
-      .card {
-        background: var(--sc-surface);
-        border: 1px solid var(--sc-border);
-        border-radius: var(--sc-radius);
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .label {
-        color: var(--sc-text-muted);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-      .value {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--sc-primary);
-      }
-      .table {
-        width: 100%;
-        background: var(--sc-surface);
-        border: 1px solid var(--sc-border);
-        border-radius: var(--sc-radius);
-        border-collapse: collapse;
-      }
-      th,
-      td {
-        text-align: left;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--sc-border);
-      }
-      th {
-        background: var(--sc-surface-2);
-      }
-      tr:last-child td {
-        border-bottom: 0;
-      }
-      .muted {
-        color: var(--sc-text-muted);
-      }
-    `,
+  templateUrl: './seller-orders.component.html',
+  styleUrls: ['./seller-orders.component.scss'],
+  imports: [
+    DatePipe, TPipe, SpinnerComponent, KpiCardComponent, CurrencyFormatPipe, StatusBadgeComponent,
   ],
 })
 export class SellerOrdersComponent implements OnInit {
   private readonly sellerApi = inject(SellerApi);
   private readonly orderApi = inject(OrderApi);
+  private readonly toast = inject(ToastService);
 
   readonly seller = signal<SellerDto | null>(null);
   readonly kpi = signal<SellerOrderKpiResponse | null>(null);
   readonly revenue = signal<RevenuePoint[]>([]);
+  readonly orders = signal<OrderResponse[]>([]);
   readonly loading = signal(true);
+  readonly shippingId = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
     try {
       const seller = await firstValueFrom(this.sellerApi.me());
       this.seller.set(seller);
-      const [kpi, revenue] = await Promise.allSettled([
+      const [kpi, orders] = await Promise.allSettled([
         firstValueFrom(this.orderApi.sellerKpi(seller.id)),
-        firstValueFrom(this.orderApi.sellerRevenue(seller.id, 14)),
+        firstValueFrom(this.orderApi.sellerOrders(seller.id, 0, 50)),
       ]);
       if (kpi.status === 'fulfilled') this.kpi.set(kpi.value);
-      if (revenue.status === 'fulfilled') {
-        this.revenue.set(revenue.value.slice().reverse());
+      if (orders.status === 'fulfilled') {
+        this.orders.set(orders.value.content);
       }
     } finally {
       this.loading.set(false);
@@ -145,5 +53,40 @@ export class SellerOrdersComponent implements OnInit {
 
   formatPrice(value: number): string {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
+  }
+
+  canShip(status: string): boolean {
+    return status === 'CONFIRMED' || status === 'PROCESSING';
+  }
+
+  statusVariant(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
+    const map: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
+      CONFIRMED: 'success',
+      PROCESSING: 'warning',
+      SHIPPED: 'success',
+      DELIVERED: 'success',
+      COMPLETED: 'success',
+      CANCELLED: 'danger',
+      EXPIRED: 'danger',
+      PAYMENT_FAILED: 'danger',
+      PAYMENT_PENDING: 'warning',
+      FRAUD_FLAGGED: 'danger',
+    };
+    return map[status] ?? 'neutral';
+  }
+
+  async ship(order: OrderResponse): Promise<void> {
+    const sellerId = this.seller()?.id;
+    if (!sellerId) return;
+    this.shippingId.set(order.id);
+    try {
+      const updated = await firstValueFrom(this.orderApi.markShipped(order.id, sellerId));
+      this.orders.update(list => list.map(o => o.id === order.id ? updated : o));
+      this.toast.show('Sipariş kargoya verildi olarak işaretlendi', 'success');
+    } catch {
+      /* error.interceptor handles toast */
+    } finally {
+      this.shippingId.set(null);
+    }
   }
 }

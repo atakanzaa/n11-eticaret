@@ -1,0 +1,264 @@
+<div class="page-header">
+  <h1>{{ 'seller.products' | t }}</h1>
+  <button type="button" class="btn primary" (click)="openCreateModal()">
+    + {{ 'seller.addProduct' | t }}
+  </button>
+</div>
+
+@if (loading()) {
+  <sc-spinner size="lg" [label]="'common.loading' | t" />
+} @else if (rows().length === 0) {
+  <sc-empty-state icon="&#128230;"
+                  [title]="'common.empty' | t"
+                  [description]="'seller.noProductsHint' | t" />
+} @else {
+  <sc-data-table [columns]="columns" [rows]="rows()" [loading]="loading()" trackByKey="id">
+    <ng-template scTableCell="title" let-row>
+      <div class="product-cell">
+        <span class="product-title">{{ row.title }}</span>
+        @if (row.categoryName) {
+          <span class="product-category">{{ row.categoryName }}</span>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template scTableCell="price" let-row>
+      <span class="price">{{ row.price | scCurrency }}</span>
+    </ng-template>
+
+    <ng-template scTableCell="listPrice" let-row>
+      @if (row.listPrice) {
+        <span class="list-price">{{ row.listPrice | scCurrency }}</span>
+      } @else {
+        <span class="muted">&mdash;</span>
+      }
+    </ng-template>
+
+    <ng-template scTableCell="stock" let-row>
+      @if (row.stock !== null) {
+        <span [class.low-stock]="row.stock < 10">{{ row.stock }}</span>
+      } @else {
+        <span class="muted">&mdash;</span>
+      }
+    </ng-template>
+
+    <ng-template scTableCell="status" let-row>
+      <sc-status-badge [label]="row.status" [variant]="statusVariant(row.status)" />
+    </ng-template>
+
+    <ng-template scTableCell="actions" let-row>
+      <div class="actions">
+        <button type="button" class="btn-icon" (click)="openCampaignModal(row)" title="Kısa Süreli Teklif Ekle">
+          &#9889;
+        </button>
+        <button type="button" class="btn-icon" (click)="openEditModal(row)" title="Duzenle">
+          &#9998;
+        </button>
+        <button type="button" class="btn-icon danger" (click)="openDeleteConfirm(row)" title="Sil">
+          &#128465;
+        </button>
+      </div>
+    </ng-template>
+  </sc-data-table>
+}
+
+<!-- Create Product + Offer Modal (2-step wizard) -->
+<sc-modal [open]="showCreateModal()" [title]="'seller.addProduct' | t" size="lg" (closed)="showCreateModal.set(false)">
+  <!-- Step indicator -->
+  <div class="wizard-steps">
+    <div class="wizard-step" [class.active]="createStep() === 1" [class.completed]="createStep() === 2">
+      <span class="step-number">1</span>
+      {{ 'seller.stepProductInfo' | t }}
+    </div>
+    <div class="wizard-divider"></div>
+    <div class="wizard-step" [class.active]="createStep() === 2">
+      <span class="step-number">2</span>
+      {{ 'seller.stepOfferInfo' | t }}
+    </div>
+  </div>
+
+  @if (createStep() === 1) {
+    <!-- Step 1: Product Details -->
+    <div class="step-content">
+      <sc-form-field [label]="'seller.selectCategory' | t" [required]="true">
+        <select [(ngModel)]="productForm.categoryId" name="categoryId" class="sc-select">
+          <option value="">{{ 'seller.selectCategoryPlaceholder' | t }}</option>
+          @for (cat of categories(); track cat.id) {
+            <option [value]="cat.id">{{ cat.name }}</option>
+          }
+        </select>
+      </sc-form-field>
+
+      <sc-form-field [label]="'seller.productTitle' | t" [required]="true">
+        <input [(ngModel)]="productForm.title" name="title"
+               [placeholder]="'seller.productTitlePlaceholder' | t" />
+      </sc-form-field>
+
+      <sc-form-field [label]="'product.description' | t">
+        <textarea [(ngModel)]="productForm.description" name="description" rows="4"
+                  class="sc-textarea"
+                  [placeholder]="'seller.productDescPlaceholder' | t"></textarea>
+      </sc-form-field>
+
+      <sc-form-field [label]="'seller.shortDescription' | t">
+        <input [(ngModel)]="productForm.shortDescription" name="shortDescription"
+               [placeholder]="'seller.shortDescPlaceholder' | t" />
+      </sc-form-field>
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="showCreateModal.set(false)">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button type="button" class="btn primary" [disabled]="!canProceedStep1()" (click)="goToStep2()">
+          {{ 'common.next' | t }} &rarr;
+        </button>
+      </div>
+    </div>
+  } @else {
+    <!-- Step 2: Offer Details -->
+    <div class="step-content">
+      <div class="selected-info">
+        <strong>{{ productForm.title }}</strong>
+        <span class="selected-category">{{ getCategoryName(productForm.categoryId) }}</span>
+      </div>
+
+      <sc-form-field label="SKU">
+        <input [(ngModel)]="offerForm.sku" name="sku" placeholder="Otomatik olusturulur" />
+      </sc-form-field>
+
+      <div class="form-row">
+        <sc-form-field [label]="'seller.price' | t" [required]="true">
+          <input type="number" [(ngModel)]="offerForm.price" name="price" min="0" step="0.01" />
+        </sc-form-field>
+
+        <sc-form-field [label]="'seller.listPrice' | t">
+          <input type="number" [(ngModel)]="offerForm.listPrice" name="listPrice" min="0" step="0.01" />
+        </sc-form-field>
+      </div>
+
+      <sc-form-field [label]="'seller.stockQty' | t" [required]="true" [hint]="'seller.stockHelper' | t">
+        <input type="number" [(ngModel)]="offerForm.stock" name="stock" min="0" step="1" />
+      </sc-form-field>
+
+      <div class="form-row">
+        <sc-form-field [label]="'seller.cargoPrice' | t">
+          <input type="number" [(ngModel)]="offerForm.cargoPrice" name="cargoPrice" min="0" step="0.01" />
+        </sc-form-field>
+
+        <sc-form-field [label]="'seller.estimatedDelivery' | t">
+          <input type="number" [(ngModel)]="offerForm.estimatedDeliveryDays" name="estimatedDeliveryDays" min="1" />
+        </sc-form-field>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="goToStep1()">
+          &larr; {{ 'common.back' | t }}
+        </button>
+        <button type="button" class="btn primary" [disabled]="saving() || offerForm.price <= 0" (click)="submitCreate()">
+          @if (saving()) {
+            <sc-spinner size="sm" />
+          } @else {
+            {{ 'seller.addProduct' | t }}
+          }
+        </button>
+      </div>
+    </div>
+  }
+</sc-modal>
+
+<!-- Edit Offer Modal -->
+<sc-modal [open]="showEditModal()" [title]="'seller.editOffer' | t" size="lg" (closed)="showEditModal.set(false)">
+  @if (editingOffer()) {
+    <form (ngSubmit)="submitEdit()">
+      <p class="edit-context">{{ editingOffer()!.title }}</p>
+
+      <div class="form-row">
+        <sc-form-field label="Fiyat" [required]="true">
+          <input type="number" [ngModel]="editForm().price"
+                 (ngModelChange)="updateEditField('price', $event)"
+                 name="editPrice" min="0" step="0.01" />
+        </sc-form-field>
+
+        <sc-form-field label="Liste Fiyati">
+          <input type="number" [ngModel]="editForm().listPrice"
+                 (ngModelChange)="updateEditField('listPrice', $event)"
+                 name="editListPrice" min="0" step="0.01" />
+        </sc-form-field>
+      </div>
+
+      <div class="form-row">
+        <sc-form-field label="Kargo Ucreti">
+          <input type="number" [ngModel]="editForm().cargoPrice"
+                 (ngModelChange)="updateEditField('cargoPrice', $event)"
+                 name="editCargoPrice" min="0" step="0.01" />
+        </sc-form-field>
+
+        <sc-form-field label="Tahmini Teslimat (gun)">
+          <input type="number" [ngModel]="editForm().estimatedDeliveryDays"
+                 (ngModelChange)="updateEditField('estimatedDeliveryDays', $event)"
+                 name="editDeliveryDays" min="1" />
+        </sc-form-field>
+      </div>
+
+      <sc-form-field label="Durum">
+        <select [ngModel]="editForm().status"
+                (ngModelChange)="updateEditField('status', $event)"
+                name="editStatus">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="PAUSED">PAUSED</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </sc-form-field>
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="showEditModal.set(false)">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button type="submit" class="btn primary" [disabled]="saving()">
+          {{ 'common.update' | t }}
+        </button>
+      </div>
+    </form>
+  }
+</sc-modal>
+
+<!-- Delete Confirm Dialog -->
+<sc-confirm-dialog
+  [open]="showDeleteConfirm()"
+  [title]="'seller.deleteOffer' | t"
+  [message]="'seller.deleteOfferConfirm' | t"
+  [confirmLabel]="'common.delete' | t"
+  variant="danger"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()" />
+
+<!-- Campaign (Kısa Süreli Teklif) Modal -->
+<sc-modal [open]="showCampaignModal()" title="Kısa Süreli Teklif Oluştur" size="lg" (closed)="closeCampaignModal()">
+  @if (campaignTarget(); as target) {
+    <form (submit)="$event.preventDefault()">
+      <p class="edit-context"><strong>{{ target.title }}</strong> — Normal fiyat: ₺{{ target.offer.price }}</p>
+
+      <sc-form-field label="İndirimli Fiyat (₺)" [required]="true"
+                     hint="Normal fiyattan düşük olmalı">
+        <input type="number" [(ngModel)]="campaignForm.discountedPrice" name="campDiscount" min="0" step="0.01" />
+      </sc-form-field>
+
+      <div class="form-row">
+        <sc-form-field label="Başlangıç" [required]="true">
+          <input type="datetime-local" [(ngModel)]="campaignForm.startsAt" name="campStarts" />
+        </sc-form-field>
+
+        <sc-form-field label="Bitiş" [required]="true">
+          <input type="datetime-local" [(ngModel)]="campaignForm.endsAt" name="campEnds" />
+        </sc-form-field>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn" (click)="closeCampaignModal()">{{ 'common.cancel' | t }}</button>
+        <button type="button" class="btn primary" [disabled]="savingCampaign()" (click)="submitCampaign()">
+          @if (savingCampaign()) { <sc-spinner size="sm" /> } @else { Oluştur }
+        </button>
+      </div>
+    </form>
+  }
+</sc-modal>

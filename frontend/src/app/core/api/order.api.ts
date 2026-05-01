@@ -42,4 +42,17 @@ export class OrderApi {
       params: new HttpParams().set('days', days),
     });
   }
+
+  sellerOrders(sellerId: string, page = 0, size = 20): Observable<Page<OrderResponse>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<Page<OrderResponse>>(`${this.base}/orders/seller/${sellerId}`, { params });
+  }
+
+  markShipped(orderId: string, sellerId: string): Observable<OrderResponse> {
+    return this.http.patch<OrderResponse>(
+      `${this.base}/orders/${orderId}/ship`,
+      {},
+      { params: new HttpParams().set('sellerId', sellerId) },
+    );
+  }
 }
