@@ -7,11 +7,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -58,5 +58,21 @@ public class AuthController {
             null, null, null,
             new HashSet<>()
         );
+    }
+
+    @PostMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Change current user's password")
+    public void changePassword(@AuthenticationPrincipal String userId,
+                               @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(UUID.fromString(userId), request);
+    }
+
+    @PostMapping("/become-seller")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Promote current user to SELLER and return refreshed tokens")
+    public AuthResponse becomeSeller(@AuthenticationPrincipal String userId) {
+        return authService.becomeSeller(UUID.fromString(userId));
     }
 }

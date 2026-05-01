@@ -3,7 +3,6 @@ package com.smartcommerce.ai.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcommerce.ai.api.dto.ChatResponse;
-import com.smartcommerce.ai.client.McpClient;
 import com.smartcommerce.ai.domain.AiConversation;
 import com.smartcommerce.ai.domain.AiMessage;
 import com.smartcommerce.ai.repository.AiConversationRepository;
@@ -41,7 +40,6 @@ public class ShoppingAssistantService {
         """;
 
     private final AiProvider aiProvider;
-    private final McpClient mcpClient;
     private final AiConversationRepository conversationRepo;
     private final AiMessageRepository messageRepo;
     private final ObjectMapper objectMapper;
@@ -67,52 +65,17 @@ public class ShoppingAssistantService {
         messageRepo.save(AiMessage.builder()
             .conversationId(conversation.getId()).role("USER").content(userMessage).build());
 
-        var mcpTools = mcpClient.listTools();
-        var toolDefs = mcpTools.stream()
-            .map(t -> new AiProvider.AiToolDefinition(t.name(), t.description(), t.inputSchema()))
-            .toList();
+        AiProvider.AiResponse response = aiProvider.chat(new AiProvider.AiRequest(
+            SYSTEM_PROMPT, messages, null, userId, "CHAT"));
 
-        AiProvider.AiResponse response = null;
-        for (var iter = 0; iter < MAX_TOOL_USE_ITERATIONS; iter++) {
-            response = aiProvider.chat(new AiProvider.AiRequest(
-                SYSTEM_PROMPT, messages, toolDefs, userId, "CHAT"));
-
-            var toolUses = response.content().stream()
-                .filter(b -> "tool_use".equals(b.type()))
-                .toList();
-            if (toolUses.isEmpty()) break;
-
-            messages.add(AiProvider.AiMessage.assistantBlocks(response.content()));
-
-            var toolResults = new ArrayList<AiContentBlock>();
-            for (var toolUse : toolUses) {
-                try {
-                    var result = mcpClient.invokeTool(toolUse.toolName(), toolUse.input());
-                    var serialized = objectMapper.writeValueAsString(result);
-                    toolResults.add(AiContentBlock.toolResult(toolUse.toolUseId(), serialized));
-                    messageRepo.save(AiMessage.builder()
-                        .conversationId(conversation.getId()).role("TOOL_USE")
-                        .toolName(toolUse.toolName())
-                        .toolInput(objectMapper.valueToTree(toolUse.input()))
-                        .toolResult(objectMapper.valueToTree(result))
-                        .build());
-                } catch (Exception e) {
-                    log.error("MCP tool {} invocation failed", toolUse.toolName(), e);
-                    toolResults.add(AiContentBlock.toolResult(toolUse.toolUseId(),
-                        "Error: " + e.getMessage()));
-                }
-            }
-            messages.add(AiProvider.AiMessage.userToolResults(toolResults));
-        }
-
-        var finalText = response == null ? "" : response.content().stream()
+        var finalText = response.content().stream()
             .filter(b -> "text".equals(b.type()))
             .map(AiContentBlock::text)
             .reduce("", (a, b) -> a.isEmpty() ? b : a + "\n" + b);
 
         messageRepo.save(AiMessage.builder()
             .conversationId(conversation.getId()).role("ASSISTANT").content(finalText)
-            .tokenCount(response != null ? response.outputTokens() : 0).build());
+            .tokenCount(response.outputTokens()).build());
 
         conversation.setUpdatedAt(java.time.Instant.now());
         conversationRepo.save(conversation);

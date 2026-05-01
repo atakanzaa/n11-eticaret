@@ -12,6 +12,7 @@ public record ProductDocument(
     String categoryName,
     String brandId,
     String brandName,
+    java.util.List<String> sellerIds,
     Map<String, Object> attributes,
     BigDecimal minPrice,
     BigDecimal maxPrice,

@@ -28,8 +28,10 @@ public class CatalogController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) UUID brandId,
+            @RequestParam(required = false) UUID sellerId,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Integer minRating,
             @RequestParam(required = false, defaultValue = "false") Boolean inStockOnly,
             @RequestParam(required = false, defaultValue = "relevance") String sort,
             @RequestParam(defaultValue = "0") int page,
@@ -37,7 +39,8 @@ public class CatalogController {
         var query = new SearchQuery(q,
             categoryId != null ? categoryId.toString() : null,
             brandId != null ? brandId.toString() : null,
-            minPrice, maxPrice, inStockOnly, sort, page, size);
+            sellerId != null ? sellerId.toString() : null,
+            minPrice, maxPrice, minRating, inStockOnly, sort, page, size);
         return searchService.search(query);
     }
 

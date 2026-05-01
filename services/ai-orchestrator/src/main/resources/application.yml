@@ -23,8 +23,6 @@ server:
   shutdown: graceful
 
 services:
-  mcp:
-    url: ${MCP_SERVER_URL:http://localhost:8097}
   product:
     url: ${PRODUCT_SERVICE_URL:http://localhost:8084}
 

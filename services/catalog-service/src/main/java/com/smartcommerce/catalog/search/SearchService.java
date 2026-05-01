@@ -45,6 +45,9 @@ public class SearchService {
                 if (query.brandId() != null) {
                     bq.filter(f -> f.term(t -> t.field("brandId").value(FieldValue.of(query.brandId()))));
                 }
+                if (query.sellerId() != null) {
+                    bq.filter(f -> f.term(t -> t.field("sellerIds").value(FieldValue.of(query.sellerId()))));
+                }
                 if (query.minPrice() != null || query.maxPrice() != null) {
                     bq.filter(f -> f.range(r -> {
                         r.field("minPrice");
@@ -52,6 +55,11 @@ public class SearchService {
                         if (query.maxPrice() != null) r.lte(JsonData.of(query.maxPrice()));
                         return r;
                     }));
+                }
+                if (query.minRating() != null && query.minRating() > 0) {
+                    bq.filter(f -> f.range(r -> r
+                        .field("averageRating")
+                        .gte(JsonData.of(query.minRating()))));
                 }
                 if (Boolean.TRUE.equals(query.inStockOnly())) {
                     bq.filter(f -> f.term(t -> t.field("hasStock").value(FieldValue.of(true))));

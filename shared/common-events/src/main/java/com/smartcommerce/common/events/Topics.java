@@ -59,6 +59,13 @@ public final class Topics {
     public static final String CART_CHECKOUT_STARTED = "cart.checkout-started.v1";
     public static final String CART_ABANDONED = "cart.abandoned.v1";
 
+    // Review
+    public static final String REVIEW_CREATED = "review.created.v1";
+    public static final String REVIEW_UPDATED = "review.updated.v1";
+    public static final String REVIEW_DELETED = "review.deleted.v1";
+    public static final String REVIEW_APPROVED = "review.approved.v1";
+    public static final String REVIEW_REJECTED = "review.rejected.v1";
+
     public static String dlqOf(String topic) {
         return topic + ".dlq";
     }

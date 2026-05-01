@@ -58,4 +58,11 @@ public final class EventType {
     public static final String CART_ITEM_ADDED = "CART_ITEM_ADDED";
     public static final String CART_CHECKOUT_STARTED = "CART_CHECKOUT_STARTED";
     public static final String CART_ABANDONED = "CART_ABANDONED";
+
+    // Review
+    public static final String REVIEW_CREATED = "REVIEW_CREATED";
+    public static final String REVIEW_UPDATED = "REVIEW_UPDATED";
+    public static final String REVIEW_DELETED = "REVIEW_DELETED";
+    public static final String REVIEW_APPROVED = "REVIEW_APPROVED";
+    public static final String REVIEW_REJECTED = "REVIEW_REJECTED";
 }

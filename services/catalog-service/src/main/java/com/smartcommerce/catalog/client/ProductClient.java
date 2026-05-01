@@ -37,7 +37,9 @@ public interface ProductClient {
         String status,
         String primaryImageUrl,
         List<ImageDto> images,
-        Long version
+        Long version,
+        Double averageRating,
+        Long reviewCount
     ) {}
 
     record ImageDto(UUID id, String url, String altText, int displayOrder, boolean primary) {}

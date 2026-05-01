@@ -156,6 +156,48 @@ public class AuthService {
         });
     }
 
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        var user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, HttpStatus.UNAUTHORIZED,
+                "Mevcut şifre hatalı");
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, HttpStatus.BAD_REQUEST,
+                "Yeni şifre mevcut şifre ile aynı olamaz");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        log.info("Password changed for user {}", userId);
+    }
+
+    @Transactional
+    public AuthResponse becomeSeller(UUID userId) {
+        var user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+
+        var alreadySeller = user.getRoles().stream()
+            .anyMatch(r -> RoleName.SELLER.name().equals(r.getName()));
+        if (alreadySeller) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, HttpStatus.CONFLICT,
+                "Zaten satıcı hesabınız var");
+        }
+
+        var sellerRole = roleRepository.findByName(RoleName.SELLER.name())
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND,
+                "SELLER role not configured"));
+        user.getRoles().add(sellerRole);
+        user = userRepository.save(user);
+        log.info("User {} promoted to SELLER", userId);
+
+        return generateAuthResponse(user);
+    }
+
     private AuthResponse generateAuthResponse(User user) {
         return generateAuthResponseWithFamily(user, UUID.randomUUID(), UUID.randomUUID());
     }

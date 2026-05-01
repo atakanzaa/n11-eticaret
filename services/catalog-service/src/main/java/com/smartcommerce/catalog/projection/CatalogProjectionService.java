@@ -33,6 +33,18 @@ public class CatalogProjectionService {
             var maxPrice = offers.stream().map(ProductClient.OfferSummary::price)
                 .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
 
+            var sellerIds = offers.stream()
+                .map(ProductClient.OfferSummary::sellerId)
+                .filter(java.util.Objects::nonNull)
+                .map(UUID::toString)
+                .distinct()
+                .toList();
+
+            float averageRating = product.averageRating() != null
+                ? product.averageRating().floatValue() : 0f;
+            int reviewCount = product.reviewCount() != null
+                ? product.reviewCount().intValue() : 0;
+
             var doc = new ProductDocument(
                 productId,
                 product.title(),
@@ -41,14 +53,15 @@ public class CatalogProjectionService {
                 null,
                 product.brandId() != null ? product.brandId().toString() : null,
                 null,
+                sellerIds,
                 product.attributes(),
                 minPrice,
                 maxPrice,
                 offers.size(),
                 0,
                 true,
-                0f,
-                0,
+                averageRating,
+                reviewCount,
                 product.primaryImageUrl(),
                 product.status(),
                 Instant.now(),
