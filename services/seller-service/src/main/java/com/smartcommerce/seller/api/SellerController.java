@@ -23,9 +23,9 @@ public class SellerController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('SELLER')")
-    @Operation(summary = "Get current seller's profile")
+    @Operation(summary = "Get current seller's profile (lazily creates if missing)")
     public SellerDto getMyProfile(@AuthenticationPrincipal String userId) {
-        return sellerService.getByUserId(UUID.fromString(userId));
+        return sellerService.getOrCreateByUserId(UUID.fromString(userId));
     }
 
     @PutMapping("/me")
