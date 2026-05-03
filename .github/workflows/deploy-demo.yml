@@ -31,6 +31,17 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
+            echo "==> Pin VM-facing env vars in .env (idempotent)"
+            # The whole demo system runs on this public host. The post-3DS
+            # redirect target (FRONTEND_URL) and the gateway CORS allowlist
+            # (APP_ALLOWED_ORIGINS) must point here, otherwise the browser
+            # gets bounced to localhost:4200 after the iyzico callback.
+            PROD_HOST="http://34.76.197.240"
+            touch .env
+            sed -i '/^FRONTEND_URL=/d;/^APP_ALLOWED_ORIGINS=/d' .env
+            echo "FRONTEND_URL=${PROD_HOST}" >> .env
+            echo "APP_ALLOWED_ORIGINS=${PROD_HOST}" >> .env
+
             echo "==> Backend Maven package (skip tests)"
             mvn -B -ntp -DskipTests clean package
 

@@ -44,6 +44,7 @@ services:
       FRAUD_SERVICE_URL: http://fraud-detection-service:8095
       RETURN_SERVICE_URL: http://return-service:8096
       AI_ORCHESTRATOR_URL: http://ai-orchestrator:8098
+      APP_ALLOWED_ORIGINS: ${APP_ALLOWED_ORIGINS:-http://localhost:4200,http://localhost:8080}
 
   # ---------- Identity ----------
   auth-service:
