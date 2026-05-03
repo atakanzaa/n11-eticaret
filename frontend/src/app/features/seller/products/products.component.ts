@@ -223,6 +223,7 @@ export class SellerProductsComponent implements OnInit {
       shortDescription: '',
       categoryId: '',
       brandId: '',
+      barcode: '',
     };
     this.offerForm = {
       sku: '',

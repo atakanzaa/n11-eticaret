@@ -102,7 +102,7 @@ export class ProductComponent implements OnInit {
   readonly inventory = signal<InventoryItemResponse | null>(null);
   readonly seller = signal<SellerDto | null>(null);
   readonly campaign = signal<CampaignResponse | null>(null);
-  readonly sellersByOfferId = signal<Record<string, SellerDto>>({});
+  readonly sellersByOfferId = signal<Record<string, SellerDto | undefined>>({});
   readonly loading = signal(true);
   readonly adding = signal(false);
 

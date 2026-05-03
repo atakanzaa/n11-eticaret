@@ -459,3 +459,40 @@
     }
   }
 }
+
+.payment-error {
+  background: #fff4f4;
+  border: 1px solid #f3cccc;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+
+  .error {
+    color: #b32424;
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  .payment-error-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn-link-action {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: #0a52cc;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover { color: #073f99; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    &.danger { color: #b32424; }
+    &.danger:hover { color: #841a1a; }
+  }
+}

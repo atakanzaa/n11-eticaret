@@ -91,6 +91,10 @@ public class PaymentService {
                 return new InitiatePaymentResponse(existingPayment.getId(),
                     existingPayment.getThreeDsHtmlContent(), existingPayment.getStatus().name());
             }
+            // FAILED veya INITIATED state'inde retry — DB'de payments.order_id UNIQUE
+            // olduğu için yeni satır yaratmak yerine mevcut row'u reset edip yeniden
+            // initiate ederiz. Bu sayede kullanıcı banka kartı/taksit reddinden sonra
+            // kart veya taksit değiştirip aynı order üzerinden tekrar deneyebilir.
         }
 
         var order = orderClient.getOrder(request.orderId());
@@ -105,17 +109,35 @@ public class PaymentService {
         var user = userClient.getProfile(order.userId());
 
         var conversationId = UUID.randomUUID().toString();
-        var payment = Payment.builder()
-            .orderId(request.orderId())
-            .userId(order.userId())
-            .amount(order.grandTotal())
-            .currency(order.currency())
-            .installment(request.installment() != null ? request.installment() : 1)
-            .provider("IYZICO")
-            .providerConversationId(conversationId)
-            .status(PaymentStatus.INITIATED)
-            .cardHolderName(request.card().holderName())
-            .build();
+        Payment payment;
+        if (existing.isPresent()) {
+            // Retry: mevcut row'u reset et — yeni conversationId, fresh INITIATED state.
+            payment = existing.get();
+            payment.setInstallment(request.installment() != null ? request.installment() : 1);
+            payment.setCardHolderName(request.card().holderName());
+            payment.setProviderConversationId(conversationId);
+            payment.setProviderPaymentId(null);
+            payment.setProviderPaymentTransactionId(null);
+            payment.setThreeDsHtmlContent(null);
+            payment.setFailureCode(null);
+            payment.setFailureMessage(null);
+            payment.setFailedAt(null);
+            payment.setAmount(order.grandTotal());
+            payment.setCurrency(order.currency());
+            payment.resetForRetry(PaymentStatus.INITIATED);
+        } else {
+            payment = Payment.builder()
+                .orderId(request.orderId())
+                .userId(order.userId())
+                .amount(order.grandTotal())
+                .currency(order.currency())
+                .installment(request.installment() != null ? request.installment() : 1)
+                .provider("IYZICO")
+                .providerConversationId(conversationId)
+                .status(PaymentStatus.INITIATED)
+                .cardHolderName(request.card().holderName())
+                .build();
+        }
         payment = paymentRepository.save(payment);
 
         var providerRequest = new PaymentProvider.InitiateRequest(
@@ -185,8 +207,11 @@ public class PaymentService {
 
             publishPaymentFailed(payment, result.errorCode(), result.errorMessage());
 
-            throw new BusinessException(ErrorCode.PAYMENT_FAILED,
-                "Payment initiation failed: " + result.errorMessage());
+            var mappedCode = IyzicoErrorMapper.map(result.errorCode(), result.errorMessage());
+            throw new BusinessException(mappedCode,
+                result.errorMessage() != null && !result.errorMessage().isBlank()
+                    ? result.errorMessage()
+                    : "Payment initiation failed");
         }
 
         attempt.setStatus("3DS_INITIATED");

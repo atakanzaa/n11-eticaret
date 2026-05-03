@@ -62,7 +62,26 @@
 
             <form [formGroup]="form" novalidate>
               @if (paymentError()) {
-                <p class="error" role="alert">{{ paymentError() }}</p>
+                <div class="payment-error" role="alert">
+                  <p class="error">{{ paymentError() }}</p>
+                  <div class="payment-error-actions">
+                    @if (showSwitchToSingle()) {
+                      <button type="button"
+                              class="btn-link-action"
+                              (click)="switchToSinglePayment()">
+                        Tek çekim'e geç
+                      </button>
+                    }
+                    @if (activeOrderId()) {
+                      <button type="button"
+                              class="btn-link-action danger"
+                              [disabled]="cancellingOrder()"
+                              (click)="cancelActiveOrder()">
+                        {{ cancellingOrder() ? 'İptal ediliyor…' : 'Vazgeç ve baştan başla' }}
+                      </button>
+                    }
+                  </div>
+                </div>
               }
               <div class="card-form" formGroupName="card">
                 <sc-form-field label="Kart numarasi" [required]="true"
@@ -128,7 +147,7 @@
                     (click)="selectInstallment(n)">
                     <strong>{{ n === 1 ? 'Tek cekim' : n + ' ay' }}</strong>
                     <span class="installment-monthly">
-                      {{ monthlyPayment() | scCurrency }}/ay
+                      {{ monthlyFor(n) | scCurrency }}/ay
                     </span>
                   </button>
                 }

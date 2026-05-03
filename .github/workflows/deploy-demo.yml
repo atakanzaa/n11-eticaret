@@ -1,0 +1,60 @@
+name: Deploy Demo (GCE)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: SSH + Docker Compose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.GCE_HOST }}
+          username: ${{ secrets.GCE_USER }}
+          key: ${{ secrets.GCE_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 40m
+          script: |
+            set -euo pipefail
+            cd ~/n11-eticaret
+            echo "==> git pull"
+            git fetch --all
+            git reset --hard origin/main
+
+            echo "==> Backend Maven package (skip tests)"
+            mvn -B -ntp -DskipTests clean package
+
+            echo "==> Infra (postgres, kafka, redis, opensearch, rabbit, mailpit)"
+            docker compose -f docker-compose.yml up -d
+
+            echo "==> Wait for kafka, then create topics"
+            sleep 20
+            bash infra/kafka/create-topics.sh || true
+
+            echo "==> Application services"
+            docker compose -f docker-compose.services.yml up -d --build
+
+            echo "==> Observability stack"
+            docker compose -f docker-compose.observability.yml up -d
+
+            echo "==> Frontend build + nginx publish"
+            cd frontend
+            npm ci
+            npm run build:prod
+            sudo mkdir -p /var/www/smartcommerce
+            sudo rm -rf /var/www/smartcommerce/*
+            sudo cp -r dist/smartcommerce/browser/* /var/www/smartcommerce/
+            sudo systemctl reload nginx || sudo systemctl restart nginx
+
+            echo "==> Done"
+            docker compose -f ../docker-compose.services.yml ps

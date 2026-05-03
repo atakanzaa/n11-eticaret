@@ -78,7 +78,7 @@ public class AiUsageQueryService {
         var rows = repository.dailySpendSince(since);
         var byDay = new TreeMap<LocalDate, DailyUsage>();
         for (Object[] row : rows) {
-            LocalDate day = ((Timestamp) row[0]).toInstant().atOffset(ZoneOffset.UTC).toLocalDate();
+            LocalDate day = toLocalDate(row[0]);
             byDay.put(day, new DailyUsage(day, toBigDecimal(row[1]), ((Number) row[2]).longValue()));
         }
         var today = LocalDate.now(ZoneOffset.UTC);
@@ -87,6 +87,23 @@ public class AiUsageQueryService {
             byDay.putIfAbsent(d, new DailyUsage(d, BigDecimal.ZERO, 0));
         }
         return byDay.values().stream().toList();
+    }
+
+    /**
+     * The dailySpendSince native query returns the bucketed timestamp as
+     * Timestamp on some drivers and as Instant on others (Hibernate 6 +
+     * pgjdbc with java.time mapping). Accept both, plus java.sql.Date for
+     * date_trunc('day', ...) edge cases.
+     */
+    private static LocalDate toLocalDate(Object value) {
+        if (value == null) throw new IllegalStateException("daily bucket value is null");
+        if (value instanceof Timestamp ts) return ts.toInstant().atOffset(ZoneOffset.UTC).toLocalDate();
+        if (value instanceof Instant in) return in.atOffset(ZoneOffset.UTC).toLocalDate();
+        if (value instanceof java.sql.Date sd) return sd.toLocalDate();
+        if (value instanceof java.time.LocalDate ld) return ld;
+        if (value instanceof java.time.LocalDateTime ldt) return ldt.toLocalDate();
+        if (value instanceof java.time.OffsetDateTime odt) return odt.toLocalDate();
+        throw new IllegalStateException("Unsupported daily bucket type: " + value.getClass().getName());
     }
 
     private static BigDecimal toBigDecimal(Object value) {

@@ -193,6 +193,7 @@ export const TR = {
     paymentSuccess: 'Ödemeniz başarıyla alındı',
     paymentFailure: 'Ödeme başarısız oldu',
     paymentFailed: 'Ödeme işlemi tamamlanamadı, lütfen kart bilgilerinizi kontrol edin',
+    orderCancelled: 'Sipariş iptal edildi. Yeniden başlayabilirsiniz.',
     cardHolderInvalid: 'Lütfen kart üzerindeki tam ismi giriniz',
     cardNumberInvalid: 'Geçerli bir kart numarası giriniz',
     expireInvalid: 'Geçerli bir son kullanma tarihi giriniz',
@@ -200,6 +201,18 @@ export const TR = {
     orderNumber: 'Sipariş No',
     estimatedDelivery: 'Tahmini Teslimat',
     backToShopping: 'Alışverişe Devam Et',
+  },
+
+  errors: {
+    // ERR_4xxx codes from shared/common-errors/ErrorCode.java
+    ERR_4000: 'Ödeme alınamadı. Lütfen tekrar deneyin.',
+    ERR_4001: 'Ödeme sağlayıcısına ulaşılamadı. Birkaç dakika sonra tekrar deneyin.',
+    ERR_4002: 'Banka kartları taksit kabul etmiyor. "Tek çekim"e geçin veya farklı bir kredi kartı deneyin.',
+    ERR_4003: 'Kart limitiniz yetersiz. Lütfen başka bir kart deneyin.',
+    ERR_4004: 'Kart bilgileri hatalı. Numara, son kullanma tarihi ve CVV alanlarını kontrol edin.',
+    ERR_4005: '3D Secure doğrulaması başarısız oldu. Lütfen tekrar deneyin.',
+    ERR_4006: 'Bankanız işlemi reddetti. Lütfen bankanızla görüşün veya farklı bir kart deneyin.',
+    ERR_4007: 'Ödeme alınamadı. Lütfen başka bir kartla tekrar deneyin.',
   },
 
   orderStatus: {

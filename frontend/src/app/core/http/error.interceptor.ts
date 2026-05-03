@@ -30,7 +30,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       } else if (err.status === 403) {
         toast.show(i18n.t('auth.unauthorized'), 'warn');
       } else {
-        const message = extractMessage(err) ?? i18n.t('common.error');
+        const message = extractMessage(err, i18n) ?? i18n.t('common.error');
         toast.show(message, 'danger');
       }
       return throwError(() => err);
@@ -38,9 +38,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
-function extractMessage(err: HttpErrorResponse): string | null {
+function extractMessage(err: HttpErrorResponse, i18n: I18nService): string | null {
   const body = err.error as BackendErrorEnvelope | string | undefined;
   if (!body) return null;
   if (typeof body === 'string') return body;
+  // Backend canonical ERR_xxxx kodu → i18n çevirisi varsa onu göster.
+  const code = body.error?.code;
+  if (code && /^ERR_\d{4}$/.test(code)) {
+    const key = `errors.${code}`;
+    const translated = i18n.t(key);
+    if (translated && translated !== key) return translated;
+  }
   return body.error?.message ?? null;
 }

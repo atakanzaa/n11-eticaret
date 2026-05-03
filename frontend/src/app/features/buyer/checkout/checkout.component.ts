@@ -67,6 +67,12 @@ export class CheckoutComponent implements OnInit {
 
   // Toast'a takılmadan, kart formu üstünde gösterilen detay hata mesajı
   readonly paymentError = signal<string | null>(null);
+  // Backend'den gelen canonical hata kodu (PAYMENT_BANK_CARD_NO_INSTALLMENT vb.)
+  readonly paymentErrorCode = signal<string | null>(null);
+  // Yeni order yaratıldıysa orderId burada tutulur — payment fail olursa retry
+  // sırasında aynı order üzerinden initiate edilir, yeni order yaratılmaz.
+  readonly activeOrderId = signal<string | null>(null);
+  readonly cancellingOrder = signal(false);
 
   readonly cardHolderError = computed(() => {
     const c = this.form.get('card.holderName');
@@ -148,6 +154,12 @@ export class CheckoutComponent implements OnInit {
     this.form.patchValue({ installment: n });
   }
 
+  /** Per-button monthly amount preview — total / n (n = button's installment count). */
+  monthlyFor(n: number): number {
+    const total = this.cart.subtotal() - this.cart.discount();
+    return n > 0 ? total / n : total;
+  }
+
   nextStep(): void {
     const step = this.currentStep();
     if (step < 2) this.currentStep.set(step + 1);
@@ -172,6 +184,7 @@ export class CheckoutComponent implements OnInit {
 
   async submit(): Promise<void> {
     this.paymentError.set(null);
+    this.paymentErrorCode.set(null);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -179,17 +192,24 @@ export class CheckoutComponent implements OnInit {
     this.submitting.set(true);
     try {
       const v = this.form.getRawValue();
-      const idempotencyKey = crypto.randomUUID();
 
-      const checkoutResponse = await firstValueFrom(
-        this.orderApi.checkout(
-          {
-            addressId: v.addressId,
-            couponCode: this.cart.coupon()?.code,
-          },
-          idempotencyKey,
-        ),
-      );
+      // Yalnızca aktif order yoksa yeni Order yarat. Payment fail olunca
+      // activeOrderId silinmiyor → retry aynı order üzerinden initiate çağırır.
+      let orderId = this.activeOrderId();
+      if (!orderId) {
+        const idempotencyKey = crypto.randomUUID();
+        const checkoutResponse = await firstValueFrom(
+          this.orderApi.checkout(
+            {
+              addressId: v.addressId,
+              couponCode: this.cart.coupon()?.code,
+            },
+            idempotencyKey,
+          ),
+        );
+        orderId = checkoutResponse.orderId;
+        this.activeOrderId.set(orderId);
+      }
 
       const card = { ...v.card };
       if (card.expireYear && /^\d{2}$/.test(card.expireYear)) {
@@ -197,7 +217,7 @@ export class CheckoutComponent implements OnInit {
       }
       const paymentResponse = await firstValueFrom(
         this.paymentApi.initiate({
-          orderId: checkoutResponse.orderId,
+          orderId,
           card,
           installment: v.installment,
         }),
@@ -207,11 +227,61 @@ export class CheckoutComponent implements OnInit {
         state: { html: paymentResponse.threeDsHtmlContent ?? '' },
       });
     } catch (err: unknown) {
-      // error.interceptor toast'ı gösterse de kart formu üstünde detay göstermek isteriz
-      const message = (err as { error?: { error?: { message?: string } } })?.error?.error?.message;
-      this.paymentError.set(message ?? this.i18n.t('checkout.paymentFailed'));
+      // error.interceptor toast'ı gösterse de kart formu üstünde detay göstermek isteriz.
+      const errorBody = (err as { error?: { error?: { code?: string; message?: string } } })?.error?.error;
+      const code = errorBody?.code;
+      const message = errorBody?.message;
+
+      // Backend canonical ERR_xxxx kodu → kullanıcı dostu Türkçe mesaj.
+      // Bilinmeyen kodlarda backend'in raw mesajına düşeriz.
+      this.paymentErrorCode.set(code ?? null);
+      const i18nKey = code && /^ERR_\d{4}$/.test(code) ? `errors.${code}` : null;
+      const localized = i18nKey ? this.i18n.t(i18nKey) : null;
+      this.paymentError.set(
+        localized && localized !== i18nKey
+          ? localized
+          : message ?? this.i18n.t('checkout.paymentFailed'),
+      );
     } finally {
       this.submitting.set(false);
     }
   }
+
+  /** Banka kartı taksit reddi sonrası tek tıkla "Tek çekim'e geç" CTA. */
+  switchToSinglePayment(): void {
+    this.selectInstallment(1);
+    this.paymentError.set(null);
+    this.paymentErrorCode.set(null);
+  }
+
+  /**
+   * Aktif order'ı iptal et + state temizle. Kullanıcı kart/adres tamamen
+   * değiştirmek isterse bu butonu kullanır → bir sonraki submit'te yeni
+   * Order yaratılır.
+   */
+  async cancelActiveOrder(): Promise<void> {
+    const orderId = this.activeOrderId();
+    if (!orderId) return;
+    this.cancellingOrder.set(true);
+    try {
+      await firstValueFrom(this.orderApi.cancelOrder(orderId));
+      this.activeOrderId.set(null);
+      this.paymentError.set(null);
+      this.paymentErrorCode.set(null);
+      this.toast.show(this.i18n.t('checkout.orderCancelled'), 'success');
+    } catch {
+      // Order zaten cancel veya pencere kapandı — sessiz geç, state temizle.
+      this.activeOrderId.set(null);
+      this.paymentError.set(null);
+      this.paymentErrorCode.set(null);
+    } finally {
+      this.cancellingOrder.set(false);
+    }
+  }
+
+  /** Banka kartı + taksit reddedildiyse hızlı CTA göster (ERR_4002). */
+  readonly showSwitchToSingle = computed(() =>
+    this.paymentErrorCode() === 'ERR_4002' &&
+    this.selectedInstallment() !== 1,
+  );
 }

@@ -120,4 +120,22 @@ public class Payment {
         }
         this.status = target;
     }
+
+    /**
+     * Reset terminal/error state back to a fresh initiating state for retry.
+     * Bypasses the state machine because retry from FAILED → INITIATED would
+     * otherwise be rejected. Only PaymentService.initiatePayment uses this when
+     * the user retries against the same orderId after a provider rejection.
+     */
+    public void resetForRetry(PaymentStatus target) {
+        if (target != PaymentStatus.INITIATED) {
+            throw new IllegalArgumentException("resetForRetry only allows INITIATED, got " + target);
+        }
+        if (this.status == PaymentStatus.SUCCEEDED || this.status == PaymentStatus.PARTIALLY_REFUNDED
+            || this.status == PaymentStatus.REFUNDED) {
+            throw new IllegalStateException("Cannot reset a settled payment: " + this.status);
+        }
+        this.status = target;
+        this.initiatedAt = Instant.now();
+    }
 }

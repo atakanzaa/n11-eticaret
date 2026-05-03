@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (Maven)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build & install shared modules
+        run: mvn -B -ntp -pl shared/common-errors,shared/common-events,shared/common-web,shared/common-security,shared/common-test -am install -DskipTests
+
+      - name: Build all services (skip tests on PR for speed)
+        if: github.event_name == 'pull_request'
+        run: mvn -B -ntp -DskipTests package
+
+      - name: Build all services + run tests (main)
+        if: github.event_name != 'pull_request'
+        run: mvn -B -ntp verify
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build (production)
+        run: npm run build:prod
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/smartcommerce/browser
+          retention-days: 7
