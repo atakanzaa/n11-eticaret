@@ -6,26 +6,33 @@ scrape_configs:
   - job_name: 'smartcommerce-services'
     metrics_path: /actuator/prometheus
     static_configs:
+      # Use docker-network service names — Prometheus is on the shared
+      # `n11-eticaret_smartcommerce` network and resolves them directly.
+      # host.docker.internal previously required host-gateway and was flaky.
       - targets:
-        - 'host.docker.internal:8080'  # api-gateway
-        - 'host.docker.internal:8081'  # auth
-        - 'host.docker.internal:8082'  # user
-        - 'host.docker.internal:8083'  # seller
-        - 'host.docker.internal:8084'  # product
-        - 'host.docker.internal:8085'  # inventory
-        - 'host.docker.internal:8086'  # catalog
-        - 'host.docker.internal:8087'  # recommendation
-        - 'host.docker.internal:8088'  # cart
-        - 'host.docker.internal:8089'  # order
-        - 'host.docker.internal:8090'  # payment
-        - 'host.docker.internal:8092'  # shipment
-        - 'host.docker.internal:8093'  # promotion
-        - 'host.docker.internal:8094'  # notification
-        - 'host.docker.internal:8095'  # fraud (Day 6)
-        - 'host.docker.internal:8096'  # return (Day 6)
-        - 'host.docker.internal:8098'  # ai-orchestrator (Day 6)
+        - 'api-gateway:8080'
+        - 'auth-service:8081'
+        - 'user-service:8082'
+        - 'seller-service:8083'
+        - 'product-service:8084'
+        - 'inventory-service:8085'
+        - 'catalog-service:8086'
+        - 'recommendation-service:8087'
+        - 'cart-service:8088'
+        - 'order-service:8089'
+        - 'payment-service:8090'
+        - 'shipment-service:8092'
+        - 'promotion-service:8093'
+        - 'notification-service:8094'
+        - 'fraud-detection-service:8095'
+        - 'return-service:8096'
+        - 'ai-orchestrator:8098'
     relabel_configs:
       - source_labels: [__address__]
-        regex: 'host.docker.internal:(\d+)'
-        target_label: service_port
+        regex: '([a-z0-9-]+):(\d+)'
+        target_label: service
         replacement: '${1}'
+      - source_labels: [__address__]
+        regex: '([a-z0-9-]+):(\d+)'
+        target_label: service_port
+        replacement: '${2}'

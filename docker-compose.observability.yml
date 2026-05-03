@@ -48,6 +48,21 @@ services:
     networks:
       - smartcommerce
 
+  # Tails Docker container stdout/stderr and ships to Loki. Without this
+  # nothing reaches Loki — it has no built-in log collector.
+  promtail:
+    image: grafana/promtail:latest
+    container_name: smartcommerce-promtail
+    volumes:
+      - ./infra/observability/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - smartcommerce
+
   tempo:
     image: grafana/tempo:latest
     container_name: smartcommerce-tempo
