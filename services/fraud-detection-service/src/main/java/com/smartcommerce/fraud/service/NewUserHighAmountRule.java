@@ -9,7 +9,7 @@ import java.time.Instant;
 @Component
 public class NewUserHighAmountRule implements FraudRule {
 
-    private static final BigDecimal NEW_USER_AMOUNT_LIMIT = new BigDecimal("5000");
+    private static final BigDecimal NEW_USER_AMOUNT_LIMIT = new BigDecimal("100000");
     private static final long NEW_USER_AGE_HOURS = 24;
 
     @Override
