@@ -101,6 +101,19 @@ spring:
         # so origins are listed explicitly. Override via APP_ALLOWED_ORIGINS env var when
         # deploying behind a real domain.
         cors-configurations:
+          # Iyzico 3DS callback — after the bank challenge, an HTML page in the
+          # user's browser auto-POSTs back to our callback URL. The Origin
+          # header carries the bank/iyzico domain, which varies per acquirer
+          # and is not enumerable. Authenticity is enforced via HMAC signature
+          # (iyzico.webhook.secret) in IyzicoWebhookController, not cookies, so
+          # allowCredentials must be false to permit the wildcard origin.
+          '[/api/payments/iyzico/**]':
+            allowedOrigins: ['*']
+            allowedMethods: [GET, POST, OPTIONS]
+            allowedHeaders: '*'
+            allowCredentials: false
+            maxAge: 3600
+          # Browser-app traffic (Angular SPA) — credentialed requests need explicit origins.
           '[/**]':
             allowedOrigins: ${APP_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8080}
             allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD]
