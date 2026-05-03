@@ -7,7 +7,11 @@
  */
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.smartcommerce.example',
+  // Empty string → http calls hit relative `/api/...` paths and are proxied
+  // by nginx (see infra/deploy/nginx-smartcommerce.conf) to api-gateway:8080
+  // on the same host. Override only when the gateway lives on a different
+  // origin from the frontend.
+  apiBaseUrl: '',
   installments: [1, 2, 3, 6, 9, 12],
   iyzicoSandbox: false,
 } as const;
