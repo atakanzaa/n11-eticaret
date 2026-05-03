@@ -197,7 +197,14 @@ export class CheckoutComponent implements OnInit {
       // activeOrderId silinmiyor → retry aynı order üzerinden initiate çağırır.
       let orderId = this.activeOrderId();
       if (!orderId) {
-        const idempotencyKey = crypto.randomUUID();
+        // crypto.randomUUID() is only available on secure (HTTPS) contexts.
+        // Demo runs on plain HTTP, so we fall back to a manual v4 UUID.
+        const idempotencyKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+              const r = Math.random() * 16 | 0;
+              return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            }));
         const checkoutResponse = await firstValueFrom(
           this.orderApi.checkout(
             {
