@@ -103,12 +103,17 @@ public class CheckoutOrchestrator {
         // PAYMENT_PENDING orders. Lock is released when the @Transactional commits.
         orderRepository.lockCheckoutForUser(userId.toString());
 
-        // After acquiring the lock, refuse if user already has an in-flight order.
+        // After acquiring the lock, find any in-flight order for this user
+        // and auto-cancel it. Starting a new checkout implies the previous
+        // attempt was abandoned (closed browser, 3DS dropped, switched
+        // payment method). Releases inventory + emits ORDER_CANCELLED.
         var existing = orderRepository.findFirstByUserIdAndStatusIn(
             userId, List.of(OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING));
         if (existing.isPresent()) {
-            throw new BusinessException(ErrorCode.IDEMPOTENCY_KEY_CONFLICT, HttpStatus.CONFLICT,
-                "An order is already in progress for this user (orderId=" + existing.get().getId() + ")");
+            var stale = existing.get();
+            log.info("Auto-cancelling abandoned {} order {} for user {} on new checkout",
+                stale.getStatus(), stale.getId(), userId);
+            cancelPaymentPendingOrder(stale, "REPLACED_BY_NEW_CHECKOUT", EventType.ORDER_CANCELLED);
         }
 
         Order order = null;
