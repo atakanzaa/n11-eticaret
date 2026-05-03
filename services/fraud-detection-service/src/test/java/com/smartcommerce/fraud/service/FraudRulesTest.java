@@ -21,29 +21,29 @@ class FraudRulesTest {
     @Mock FraudBlacklistRepository blacklistRepository;
 
     @Test
-    @DisplayName("HIGH_AMOUNT triggers at 80 score for >50k TRY")
-    void highAmount_above50kTriggersScore80() {
+    @DisplayName("HIGH_AMOUNT triggers at 80 score for >250k TRY")
+    void highAmount_above250kTriggersScore80() {
         var rule = new HighAmountRule();
-        var ctx = baseContext(new BigDecimal("60000"));
+        var ctx = baseContext(new BigDecimal("300000"));
         var result = rule.evaluate(ctx);
         assertThat(result.triggered()).isTrue();
         assertThat(result.riskScore()).isEqualTo(80);
     }
 
     @Test
-    @DisplayName("HIGH_AMOUNT triggers at 30 score for 20k-50k TRY")
-    void highAmount_between20kAnd50kTriggersScore30() {
+    @DisplayName("HIGH_AMOUNT triggers at 30 score for 100k-250k TRY")
+    void highAmount_between100kAnd250kTriggersScore30() {
         var rule = new HighAmountRule();
-        var result = rule.evaluate(baseContext(new BigDecimal("25000")));
+        var result = rule.evaluate(baseContext(new BigDecimal("150000")));
         assertThat(result.triggered()).isTrue();
         assertThat(result.riskScore()).isEqualTo(30);
     }
 
     @Test
-    @DisplayName("HIGH_AMOUNT does not trigger under 20k TRY")
-    void highAmount_below20kNotTriggered() {
+    @DisplayName("HIGH_AMOUNT does not trigger under 100k TRY")
+    void highAmount_below100kNotTriggered() {
         var rule = new HighAmountRule();
-        var result = rule.evaluate(baseContext(new BigDecimal("19999")));
+        var result = rule.evaluate(baseContext(new BigDecimal("99999")));
         assertThat(result.triggered()).isFalse();
     }
 
@@ -74,12 +74,12 @@ class FraudRulesTest {
     }
 
     @Test
-    @DisplayName("NEW_USER_HIGH_AMOUNT flags new (<24h) users with high orders")
+    @DisplayName("NEW_USER_HIGH_AMOUNT flags new (<24h) users with >100k TRY orders")
     void newUserHighAmount_recentRegistrationHighOrder() {
         var rule = new NewUserHighAmountRule();
         var ctx = new FraudRule.FraudCheckContext(
             UUID.randomUUID(), UUID.randomUUID(), null, null,
-            new BigDecimal("6000"), "TRY", 1, 0, BigDecimal.ZERO, 0, true,
+            new BigDecimal("150000"), "TRY", 1, 0, BigDecimal.ZERO, 0, true,
             Instant.now().minus(2, ChronoUnit.HOURS));
         var result = rule.evaluate(ctx);
         assertThat(result.triggered()).isTrue();
@@ -92,7 +92,7 @@ class FraudRulesTest {
         var rule = new NewUserHighAmountRule();
         var ctx = new FraudRule.FraudCheckContext(
             UUID.randomUUID(), UUID.randomUUID(), null, null,
-            new BigDecimal("6000"), "TRY", 1, 0, BigDecimal.ZERO, 0, false,
+            new BigDecimal("150000"), "TRY", 1, 0, BigDecimal.ZERO, 0, false,
             Instant.now().minus(30, ChronoUnit.DAYS));
         var result = rule.evaluate(ctx);
         assertThat(result.triggered()).isFalse();
