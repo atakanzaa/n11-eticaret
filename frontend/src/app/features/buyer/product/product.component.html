@@ -254,7 +254,7 @@
 
             <!-- Write review button -->
             @if (auth.isAuthenticated()) {
-              <div class="review-action">
+              <div class="review-action" #reviewFormAnchor>
                 <button class="sc-btn sc-btn-outline" (click)="toggleReviewForm()">
                   @if (showReviewForm()) {
                     {{ 'common.cancel' | t }}

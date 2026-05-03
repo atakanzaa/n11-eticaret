@@ -1,7 +1,10 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnInit,
+  ViewChild,
   computed,
   inject,
   signal,
@@ -77,7 +80,14 @@ import { TPipe } from '@shared/i18n.pipe';
     TPipe,
   ],
 })
-export class ProductComponent implements OnInit {
+export class ProductComponent implements OnInit, AfterViewInit {
+  // Tabs are rendered via <sc-tabs>/<sc-tab-panel>. Inactive panels are
+  // [hidden]-CSS, so toggling showReviewForm without also activating the
+  // "Degerlendirmeler" tab leaves the form invisible to the user.
+  @ViewChild(TabsComponent) private tabs?: TabsComponent;
+  @ViewChild('reviewFormAnchor') private reviewFormAnchor?: ElementRef<HTMLElement>;
+  private static readonly REVIEWS_TAB_INDEX = 2;
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly productApi = inject(ProductApi);
@@ -326,6 +336,23 @@ export class ProductComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.reviewOrderId()) return;
+    // Activate the Reviews tab and scroll the form into view. Defer to a
+    // microtask so the form's *@if (showReviewForm())* node renders first;
+    // smoothScrollIntoView would otherwise target an element that doesn't
+    // exist yet.
+    queueMicrotask(() => {
+      this.tabs?.select(ProductComponent.REVIEWS_TAB_INDEX);
+      setTimeout(() => {
+        this.reviewFormAnchor?.nativeElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 50);
+    });
   }
 
   // ── Review loading ──────────────────────────────────────────────
