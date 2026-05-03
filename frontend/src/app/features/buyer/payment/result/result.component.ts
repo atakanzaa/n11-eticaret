@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PaymentApi } from '@core/api/payment.api';
 import { PaymentResponse } from '@core/models/payment.types';
+import { CartService } from '@core/cart.service';
 import { TPipe } from '@shared/i18n.pipe';
 import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
 import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
@@ -26,6 +27,7 @@ import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
 export class PaymentResultComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly paymentApi = inject(PaymentApi);
+  private readonly cart = inject(CartService);
 
   readonly payment = signal<PaymentResponse | null>(null);
   readonly state = signal<'pending' | 'success' | 'failure'>('pending');
@@ -55,6 +57,7 @@ export class PaymentResultComponent implements OnInit, OnDestroy {
       if (payment.status === 'SUCCEEDED') {
         this.state.set('success');
         this.stopPolling();
+        this.cart.refresh().catch(() => {});
       } else if (payment.status === 'FAILED') {
         this.state.set('failure');
         this.stopPolling();

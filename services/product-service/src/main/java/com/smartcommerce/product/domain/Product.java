@@ -38,6 +38,15 @@ public class Product {
     @Column(name = "category_id", nullable = false)
     private UUID categoryId;
 
+    /**
+     * Optional global product identifier (barcode / GTIN / EAN / UPC). When
+     * present it is unique across the catalog — sellers creating a product with
+     * a barcode that already exists are redirected to "add an offer to the
+     * existing product" flow instead of duplicating the catalog entry.
+     */
+    @Column(length = 32)
+    private String barcode;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     @Builder.Default

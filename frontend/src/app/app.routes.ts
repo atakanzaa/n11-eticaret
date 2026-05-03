@@ -30,6 +30,8 @@ export const routes: Routes = [
           { path: 'iade/:id', loadComponent: () => import('./features/buyer/account/return/return.component').then(m => m.ReturnComponent) },
           { path: 'profil', loadComponent: () => import('./features/buyer/account/profile/profile.component').then(m => m.ProfileComponent) },
           { path: 'kuponlarim', loadComponent: () => import('./features/buyer/account/coupons/coupons.component').then(m => m.BuyerCouponsComponent) },
+          { path: 'favorilerim', loadComponent: () => import('./features/buyer/account/favourites/favourites.component').then(m => m.FavouritesComponent) },
+          { path: 'yorumlarim', loadComponent: () => import('./features/buyer/account/my-reviews/my-reviews.component').then(m => m.MyReviewsComponent) },
         ],
       },
     ],

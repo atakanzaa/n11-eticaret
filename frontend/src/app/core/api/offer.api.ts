@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SKIP_ERROR_TOAST } from '@core/http/error.interceptor';
 import {
   CreateOfferRequest,
   OfferResponse,
@@ -25,8 +26,9 @@ export class OfferApi {
     return this.http.get<OfferResponse[]>(`${this.base}/products/${productId}/offers`);
   }
 
-  create(request: CreateOfferRequest): Observable<OfferResponse> {
-    return this.http.post<OfferResponse>(`${this.base}/offers`, request);
+  create(request: CreateOfferRequest, skipErrorToast = false): Observable<OfferResponse> {
+    const context = skipErrorToast ? new HttpContext().set(SKIP_ERROR_TOAST, true) : undefined;
+    return this.http.post<OfferResponse>(`${this.base}/offers`, request, { context });
   }
 
   update(id: string, request: UpdateOfferRequest): Observable<OfferResponse> {

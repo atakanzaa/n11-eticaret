@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthApi } from '@core/api/auth.api';
 import { AuthStateService } from '@core/auth/auth-state.service';
 import { ToastService } from '@core/toast.service';
+import { I18nService } from '@core/i18n/i18n.service';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 import { TPipe } from '@shared/i18n.pipe';
 
@@ -23,6 +24,7 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
+  private readonly i18n = inject(I18nService);
 
   readonly submitting = signal(false);
   readonly errorKey = signal<string | null>(null);
@@ -62,7 +64,7 @@ export class LoginComponent {
       this.router.navigateByUrl(returnUrl);
     } catch {
       this.errorKey.set('auth.invalidCredentials');
-      this.toast.show('Giris basarisiz', 'danger');
+      this.toast.show(this.i18n.t('auth.loginFailed'), 'danger');
     } finally {
       this.submitting.set(false);
     }

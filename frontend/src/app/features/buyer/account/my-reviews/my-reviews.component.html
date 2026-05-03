@@ -1,0 +1,75 @@
+<h2>{{ 'account.myReviewsTitle' | t }}</h2>
+
+@if (loading()) {
+  <div class="spinner-wrap">
+    <sc-spinner size="lg" [label]="'common.loading' | t" />
+  </div>
+} @else if (!hasItems()) {
+  <sc-empty-state
+    icon="comment"
+    [title]="'account.noMyReviews' | t"
+    [description]="'account.noMyReviewsHint' | t" />
+} @else {
+  <div class="reviews">
+    @for (r of reviews(); track r.id) {
+      <article class="review-card">
+        <header class="review-header">
+          <a class="product-link" [routerLink]="['/urun', r.productId]">
+            {{ 'product.editYourReview' | t }} &rarr;
+          </a>
+          <sc-star-rating [value]="r.rating" size="sm" />
+          <span class="muted">{{ r.createdAt | date: 'medium' }}</span>
+        </header>
+
+        @if (r.title) {
+          <h3 class="review-title">{{ r.title }}</h3>
+        }
+
+        @if (r.comment) {
+          <p class="review-comment">{{ r.comment }}</p>
+        }
+
+        @if (r.verifiedPurchase) {
+          <span class="verified-badge">{{ 'product.verified' | t }}</span>
+        }
+
+        <div class="review-meta">
+          <span class="muted">
+            {{ 'product.helpful' | t }}: {{ r.helpfulCount }}
+          </span>
+          @if (r.sellerReply; as reply) {
+            <details class="seller-reply">
+              <summary>{{ 'product.sellerReply' | t }}</summary>
+              <p>{{ reply.content }}</p>
+            </details>
+          }
+        </div>
+
+        <div class="review-actions">
+          <a class="btn-link" [routerLink]="['/urun', r.productId]">{{ 'common.edit' | t }}</a>
+          <button type="button" class="btn-delete" (click)="openDeleteConfirm(r)">
+            {{ 'common.delete' | t }}
+          </button>
+        </div>
+      </article>
+    }
+  </div>
+
+  @if (totalPages() > 1) {
+    <sc-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [isFirst]="isFirst()"
+      [isLast]="isLast()"
+      (pageChange)="onPageChange($event)" />
+  }
+}
+
+<sc-confirm-dialog
+  [open]="showDeleteConfirm()"
+  [title]="'common.confirm' | t"
+  [message]="'account.reviewDeleteConfirm' | t"
+  [confirmLabel]="'common.delete' | t"
+  variant="danger"
+  (confirmed)="confirmDelete()"
+  (cancelled)="showDeleteConfirm.set(false)" />

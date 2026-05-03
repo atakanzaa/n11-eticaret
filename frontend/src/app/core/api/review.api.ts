@@ -1,7 +1,8 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SKIP_ERROR_TOAST } from '@core/http/error.interceptor';
 import { Page } from '@core/models/common.types';
 import {
   CreateReviewRequest,
@@ -38,12 +39,21 @@ export class ReviewApi {
   }
 
   /**
+   * Returns the current user's full review history (paginated, newest first).
+   */
+  myReviews(page = 0, size = 20): Observable<Page<ReviewResponse>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<Page<ReviewResponse>>(`${this.base}/reviews/my`, { params });
+  }
+
+  /**
    * Returns the current user's review for a given product, or `null` if the
    * user hasn't reviewed it yet (backend returns 204 No Content in that case).
    */
   myReviewForProduct(productId: string): Observable<ReviewResponse | null> {
     return this.http
       .get<ReviewResponse | null>(`${this.base}/products/${productId}/reviews/me`, {
+        context: new HttpContext().set(SKIP_ERROR_TOAST, true),
         observe: 'response',
       })
       .pipe(map(resp => (resp.status === 204 ? null : resp.body)));

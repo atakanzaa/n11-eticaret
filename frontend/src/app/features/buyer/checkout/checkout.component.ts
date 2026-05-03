@@ -57,12 +57,48 @@ export class CheckoutComponent implements OnInit {
     installment: [1, Validators.required],
     terms: [false, Validators.requiredTrue],
     card: this.fb.group({
-      holderName: ['', Validators.required],
-      number: ['', [Validators.required, Validators.minLength(12)]],
-      expireMonth: ['', Validators.required],
-      expireYear: ['', Validators.required],
-      cvc: ['', [Validators.required, Validators.minLength(3)]],
+      holderName: ['', [Validators.required, Validators.minLength(3)]],
+      number: ['', [Validators.required, Validators.pattern(/^\d{13,19}$/)]],
+      expireMonth: ['', [Validators.required, Validators.pattern(/^(0[1-9]|1[0-2])$/)]],
+      expireYear: ['', [Validators.required, Validators.pattern(/^\d{2}$|^\d{4}$/)]],
+      cvc: ['', [Validators.required, Validators.pattern(/^\d{3,4}$/)]],
     }),
+  });
+
+  // Toast'a takılmadan, kart formu üstünde gösterilen detay hata mesajı
+  readonly paymentError = signal<string | null>(null);
+
+  readonly cardHolderError = computed(() => {
+    const c = this.form.get('card.holderName');
+    if (!c || !c.touched || c.valid) return '';
+    if (c.hasError('required')) return this.i18n.t('validation.required');
+    if (c.hasError('minlength')) return this.i18n.t('checkout.cardHolderInvalid');
+    return '';
+  });
+
+  readonly cardNumberError = computed(() => {
+    const c = this.form.get('card.number');
+    if (!c || !c.touched || c.valid) return '';
+    if (c.hasError('required')) return this.i18n.t('validation.required');
+    return this.i18n.t('checkout.cardNumberInvalid');
+  });
+
+  readonly cardExpireError = computed(() => {
+    const m = this.form.get('card.expireMonth');
+    const y = this.form.get('card.expireYear');
+    if (!m || !y) return '';
+    const monthInvalid = m.touched && !m.valid;
+    const yearInvalid = y.touched && !y.valid;
+    if (!monthInvalid && !yearInvalid) return '';
+    if (m.hasError('required') || y.hasError('required')) return this.i18n.t('validation.required');
+    return this.i18n.t('checkout.expireInvalid');
+  });
+
+  readonly cardCvcError = computed(() => {
+    const c = this.form.get('card.cvc');
+    if (!c || !c.touched || c.valid) return '';
+    if (c.hasError('required')) return this.i18n.t('validation.required');
+    return this.i18n.t('checkout.cvcInvalid');
   });
 
   readonly selectedAddress = computed(() => {
@@ -135,6 +171,7 @@ export class CheckoutComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
+    this.paymentError.set(null);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -169,8 +206,10 @@ export class CheckoutComponent implements OnInit {
       this.router.navigate(['/odeme/3ds', paymentResponse.paymentId], {
         state: { html: paymentResponse.threeDsHtmlContent ?? '' },
       });
-    } catch {
-      // error.interceptor surfaced a toast already
+    } catch (err: unknown) {
+      // error.interceptor toast'ı gösterse de kart formu üstünde detay göstermek isteriz
+      const message = (err as { error?: { error?: { message?: string } } })?.error?.error?.message;
+      this.paymentError.set(message ?? this.i18n.t('checkout.paymentFailed'));
     } finally {
       this.submitting.set(false);
     }

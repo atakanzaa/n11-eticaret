@@ -38,6 +38,16 @@ spring:
         enable.idempotence: true
         spring.json.add.type.headers: false
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 3000
+            readTimeout: 10000
+            loggerLevel: BASIC
+
+
 server:
   port: 8092
   shutdown: graceful
@@ -60,11 +70,36 @@ management:
     tags:
       application: ${spring.application.name}
 
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://tempo:4318/v1/traces}
+
 jwt:
-  secret: ${JWT_SECRET:local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+  secret: ${JWT_SECRET:?JWT_SECRET env var must be set (256+ bits)}
 
 logging:
   level:
     com.smartcommerce: DEBUG
   pattern:
     console: '%d{ISO8601} %-5level [%X{correlationId:-}] %logger{36} - %msg%n'
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 8s
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 5
+        registerHealthIndicator: true
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 12s
+        cancelRunningFuture: true

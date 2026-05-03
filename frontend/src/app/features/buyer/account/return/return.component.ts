@@ -56,8 +56,8 @@ export class ReturnComponent implements OnInit {
   readonly submitting = signal(false);
   readonly selectedItems = signal<boolean[]>([]);
 
-  selectedReason: ReturnReasonCode | null = null;
-  description = '';
+  readonly selectedReason = signal<ReturnReasonCode | null>(null);
+  readonly description = signal('');
 
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     const o = this.order();
@@ -71,8 +71,12 @@ export class ReturnComponent implements OnInit {
 
   readonly canSubmit = computed(() => {
     const items = this.selectedItems();
-    return this.selectedReason !== null && items.some(Boolean);
+    return this.selectedReason() !== null && items.some(Boolean);
   });
+
+  setReason(reason: ReturnReasonCode): void {
+    this.selectedReason.set(reason);
+  }
 
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.params['id'] as string;
@@ -114,7 +118,8 @@ export class ReturnComponent implements OnInit {
 
   async submit(): Promise<void> {
     const order = this.order();
-    if (!order || !this.selectedReason) return;
+    const reason = this.selectedReason();
+    if (!order || !reason) return;
 
     const selectedFlags = this.selectedItems();
     const items = order.items
@@ -128,8 +133,8 @@ export class ReturnComponent implements OnInit {
       const result = await firstValueFrom(
         this.returnApi.create({
           orderId: order.id,
-          reasonCode: this.selectedReason,
-          reasonDescription: this.description.trim() || undefined,
+          reasonCode: reason,
+          reasonDescription: this.description().trim() || undefined,
           items,
         }),
       );

@@ -10,6 +10,7 @@ import java.util.*;
 public interface InventoryItemRepository extends JpaRepository<InventoryItem, UUID> {
     Optional<InventoryItem> findByOfferId(UUID offerId);
     boolean existsByOfferId(UUID offerId);
+    List<InventoryItem> findByOfferIdIn(Collection<UUID> offerIds);
 
     long countBySellerId(UUID sellerId);
 

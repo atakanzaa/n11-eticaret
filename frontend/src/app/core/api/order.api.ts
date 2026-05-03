@@ -33,6 +33,22 @@ export class OrderApi {
     return this.http.get<OrderResponse>(`${this.base}/orders/${orderId}`);
   }
 
+  /**
+   * User-initiated cancellation. Backend rejects with 409 if the order has
+   * already shipped or completed.
+   */
+  cancelOrder(orderId: string): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(`${this.base}/orders/${orderId}/cancel`, {});
+  }
+
+  /**
+   * Customer confirms manual delivery (cargo is mocked). Idempotent — replays
+   * return the current state instead of erroring, so spam-clicks are safe.
+   */
+  confirmReceived(orderId: string): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(`${this.base}/orders/${orderId}/confirm-received`, {});
+  }
+
   sellerKpi(sellerId: string): Observable<SellerOrderKpiResponse> {
     return this.http.get<SellerOrderKpiResponse>(`${this.base}/orders/seller/${sellerId}/kpi`);
   }

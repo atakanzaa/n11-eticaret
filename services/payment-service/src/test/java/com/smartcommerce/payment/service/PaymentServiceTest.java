@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -90,6 +91,37 @@ class PaymentServiceTest {
     }
 
     @Test
+    @DisplayName("initiate sends order line totals as Iyzico basket item prices")
+    void initiate_usesLineTotalForBasketItems() {
+        var orderId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var item = new OrderClient.OrderItem(
+            UUID.randomUUID(), UUID.randomUUID(), 2,
+            new BigDecimal("125.00"), new BigDecimal("250.00"), "Two Pack");
+        when(orderClient.getOrder(orderId)).thenReturn(orderDetail(
+            orderId, userId, "PAYMENT_PENDING", new BigDecimal("250.00"), List.of(item)));
+        when(userClient.getProfile(userId)).thenReturn(new UserClient.UserProfile(
+            UUID.randomUUID(), userId, "atakan@example.com", "Atakan", "Yel", "+905555555555"));
+        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
+            Payment p = inv.getArgument(0);
+            if (p.getId() == null) p.setId(UUID.randomUUID());
+            return p;
+        });
+        when(paymentAttemptRepository.save(any(PaymentAttempt.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentProvider.initiate(any())).thenReturn(new PaymentProvider.InitiateResult(
+            true, null, "BASE64_HTML", null, null));
+
+        paymentService.initiatePayment(
+            new InitiatePaymentRequest(orderId, new CardDto("a", "5528790000000008", "12", "2030", "123"), 1, null));
+
+        var captor = ArgumentCaptor.forClass(PaymentProvider.InitiateRequest.class);
+        verify(paymentProvider).initiate(captor.capture());
+        assertThat(captor.getValue().basketItems()).hasSize(1);
+        assertThat(captor.getValue().basketItems().getFirst().price()).isEqualByComparingTo("250.00");
+    }
+
+    @Test
     @DisplayName("initiate publishes PAYMENT_FAILED and throws when Iyzico rejects")
     void initiate_failurePublishesFailedEvent() {
         var orderId = UUID.randomUUID();
@@ -114,6 +146,26 @@ class PaymentServiceTest {
 
         verify(outboxService).publish(eq("payment.failed.v1"), eq("PAYMENT_FAILED"),
             anyString(), eq("PAYMENT"), anyMap());
+    }
+
+    @Test
+    @DisplayName("initiate rejects zero or negative order totals before calling provider")
+    void initiate_rejectsNonPositiveGrandTotal() {
+        var orderId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        when(orderClient.getOrder(orderId)).thenReturn(orderDetail(
+            orderId, userId, "PAYMENT_PENDING", BigDecimal.ZERO,
+            List.of(new OrderClient.OrderItem(
+                UUID.randomUUID(), UUID.randomUUID(), 1,
+                new BigDecimal("100.00"), new BigDecimal("100.00"), "Discounted Product"))));
+        when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.initiatePayment(
+            new InitiatePaymentRequest(orderId, new CardDto("a", "5528790000000008", "12", "2030", "123"), 1, null)))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("greater than zero");
+
+        verify(paymentProvider, times(0)).initiate(any());
     }
 
     @Test
@@ -230,12 +282,19 @@ class PaymentServiceTest {
     }
 
     private OrderClient.OrderDetail orderDetail(UUID orderId, UUID userId, String status) {
+        return orderDetail(orderId, userId, status, new BigDecimal("250.00"),
+            List.of(new OrderClient.OrderItem(
+                UUID.randomUUID(), UUID.randomUUID(), 1,
+                new BigDecimal("250.00"), new BigDecimal("250.00"), "Test Product")));
+    }
+
+    private OrderClient.OrderDetail orderDetail(UUID orderId, UUID userId, String status,
+                                                BigDecimal grandTotal, List<OrderClient.OrderItem> items) {
         return new OrderClient.OrderDetail(
-            orderId, userId, status, new BigDecimal("250.00"), "TRY",
+            orderId, userId, status, grandTotal, "TRY",
             "Atakan Yel", "+905555555555", "Istanbul", "Kadikoy",
             "123 Test Street", "34000",
-            List.of(new OrderClient.OrderItem(
-                UUID.randomUUID(), UUID.randomUUID(), 1, new BigDecimal("250.00"), "Test Product"))
+            items
         );
     }
 }

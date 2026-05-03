@@ -34,6 +34,7 @@ public final class Topics {
     public static final String ORDER_CANCELLED = "order.cancelled.v1";
     public static final String ORDER_EXPIRED = "order.expired.v1";
     public static final String ORDER_FRAUD_FLAGGED = "order.fraud-flagged.v1";
+    public static final String ORDER_RECEIVED = "order.received.v1";
 
     // Payment
     public static final String PAYMENT_INITIATED = "payment.initiated.v1";
@@ -58,6 +59,9 @@ public final class Topics {
     public static final String CART_ITEM_ADDED = "cart.item-added.v1";
     public static final String CART_CHECKOUT_STARTED = "cart.checkout-started.v1";
     public static final String CART_ABANDONED = "cart.abandoned.v1";
+
+    // Coupon / Promotion
+    public static final String COUPON_USED = "coupon.used.v1";
 
     // Review
     public static final String REVIEW_CREATED = "review.created.v1";

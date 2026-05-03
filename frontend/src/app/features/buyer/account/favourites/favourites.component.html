@@ -1,0 +1,35 @@
+<h2>{{ 'account.favouritesTitle' | t }}</h2>
+
+@if (loading()) {
+  <div class="spinner-wrap">
+    <sc-spinner size="lg" [label]="'common.loading' | t" />
+  </div>
+} @else if (!hasItems()) {
+  <sc-empty-state
+    icon="heart"
+    [title]="'account.noFavourites' | t"
+    [description]="'account.noFavouritesHint' | t" />
+} @else {
+  <div class="grid">
+    @for (row of rows(); track row.product.id) {
+      <div class="cell">
+        <sc-product-card [product]="row.product" [offer]="row.offer" />
+        <button type="button"
+                class="remove-btn"
+                [disabled]="removing() === row.product.id"
+                (click)="remove(row.product.id)">
+          {{ 'account.removeFromFavourites' | t }}
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (totalPages() > 1) {
+    <sc-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [isFirst]="isFirst()"
+      [isLast]="isLast()"
+      (pageChange)="onPageChange($event)" />
+  }
+}

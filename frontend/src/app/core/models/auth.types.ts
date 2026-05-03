@@ -26,7 +26,6 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   phone?: string;
-  roles: RoleName[];
 }
 
 export interface RefreshRequest {

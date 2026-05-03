@@ -66,6 +66,7 @@ services:
     environment:
       <<: *app-env
       USER_SERVICE_URL: http://user-service:8082
+      ORDER_SERVICE_URL: http://order-service:8089
 
   # ---------- Catalog & Inventory ----------
   product-service:
@@ -97,6 +98,7 @@ services:
       OPENSEARCH_PORT: 9200
       OPENSEARCH_SCHEME: http
       PRODUCT_SERVICE_URL: http://product-service:8084
+      INVENTORY_SERVICE_URL: http://inventory-service:8085
 
   recommendation-service:
     <<: *app-base
@@ -128,6 +130,8 @@ services:
       INVENTORY_SERVICE_URL: http://inventory-service:8085
       PROMOTION_SERVICE_URL: http://promotion-service:8093
       FRAUD_SERVICE_URL: http://fraud-detection-service:8095
+      SELLER_SERVICE_URL: http://seller-service:8083
+      PAYMENT_SERVICE_URL: http://payment-service:8090
 
   payment-service:
     <<: *app-base
@@ -167,10 +171,14 @@ services:
     ports: ["8094:8094"]
     environment:
       <<: *app-env
+      USER_SERVICE_URL: http://user-service:8082
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: smartcommerce
+      RABBITMQ_USER: smartcommerce
       RABBITMQ_PASSWORD: smartcommerce
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM: noreply@smartcommerce.local
 
   fraud-detection-service:
     <<: *app-base

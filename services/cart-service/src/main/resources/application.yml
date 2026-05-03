@@ -22,6 +22,16 @@ spring:
     locations: classpath:db/migration
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: cart-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.smartcommerce.*
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.smartcommerce.common.events.BaseEvent
     producer:
       acks: all
       retries: 3
@@ -35,6 +45,16 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       database: 2
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 3000
+            readTimeout: 10000
+            loggerLevel: BASIC
+
 
 server:
   port: 8088
@@ -62,6 +82,13 @@ management:
     tags:
       application: ${spring.application.name}
 
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://tempo:4318/v1/traces}
+
 logging:
   level:
     com.smartcommerce: DEBUG
@@ -69,4 +96,22 @@ logging:
     console: '%d{ISO8601} %-5level [%X{correlationId:-}] %logger{36} - %msg%n'
 
 jwt:
-  secret: ${JWT_SECRET:local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+  secret: ${JWT_SECRET:?JWT_SECRET env var must be set (256+ bits)}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 8s
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 5
+        registerHealthIndicator: true
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 12s
+        cancelRunningFuture: true

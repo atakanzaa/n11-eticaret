@@ -109,6 +109,14 @@ public class InventoryService {
             .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Inventory item not found"));
     }
 
+    /** Bulk lookup. Missing offerIds are silently omitted from the response. */
+    public java.util.List<InventoryItemResponse> getByOfferIds(java.util.Collection<UUID> offerIds) {
+        if (offerIds == null || offerIds.isEmpty()) return java.util.List.of();
+        return inventoryItemRepository.findByOfferIdIn(offerIds).stream()
+            .map(mapper::toResponse)
+            .toList();
+    }
+
     @Transactional
     public InventoryItemResponse adjustStock(UUID sellerId, UUID offerId, AdjustStockRequest request) {
         var item = inventoryItemRepository.findByOfferId(offerId)

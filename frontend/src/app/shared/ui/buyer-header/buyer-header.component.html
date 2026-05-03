@@ -9,7 +9,7 @@
       <input
         class="search"
         type="text"
-        placeholder="Urun, marka veya kategori ara..."
+        [placeholder]="'nav.searchPlaceholder' | t"
         [(ngModel)]="searchQuery"
         (keydown.enter)="onSearch($event)"
         (keydown.escape)="searchOpen.set(false)"
@@ -33,23 +33,25 @@
             <span class="badge">{{ cart.itemCount() }}</span>
           }
         </a>
-        <details class="user-menu">
-          <summary class="action">
+        <div class="user-menu" [class.open]="userMenuOpen()">
+          <button type="button" class="action" (click)="toggleUserMenu($event)" [attr.aria-expanded]="userMenuOpen()">
             <span class="ico">&#x25CB;</span>
             <span class="lbl">{{ auth.currentUser()?.firstName ?? 'Hesabim' }}</span>
-          </summary>
-          <div class="dropdown-menu">
-            <a routerLink="/hesap/profil" class="menu-item">Profilim</a>
-            <a routerLink="/hesap/siparislerim" class="menu-item">Siparislerim</a>
-            @if (isSeller()) {
-              <a routerLink="/satici" class="menu-item">Satici Paneli</a>
-            }
-            @if (isAdmin()) {
-              <a routerLink="/admin" class="menu-item">Admin Paneli</a>
-            }
-            <button type="button" class="menu-item logout" (click)="onLogout()">Cikis Yap</button>
-          </div>
-        </details>
+          </button>
+          @if (userMenuOpen()) {
+            <div class="dropdown-menu">
+              <a routerLink="/hesap/profil" class="menu-item" (click)="closeUserMenu()">Profilim</a>
+              <a routerLink="/hesap/siparislerim" class="menu-item" (click)="closeUserMenu()">Siparislerim</a>
+              @if (isSeller()) {
+                <a routerLink="/satici" class="menu-item" (click)="closeUserMenu()">Satici Paneli</a>
+              }
+              @if (isAdmin()) {
+                <a routerLink="/admin" class="menu-item" (click)="closeUserMenu()">Admin Paneli</a>
+              }
+              <button type="button" class="menu-item logout" (click)="closeUserMenu(); onLogout()">Cikis Yap</button>
+            </div>
+          }
+        </div>
       } @else {
         <a routerLink="/giris" class="action">
           <span class="lbl">Giris Yap</span>

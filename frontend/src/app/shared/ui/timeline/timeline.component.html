@@ -6,7 +6,7 @@
       <div class="content">
         <strong>{{ event.label }}</strong>
         @if (event.detail) { <span class="detail">{{ event.detail }}</span> }
-        <time>{{ event.date | date:'medium' }}</time>
+        @if (event.date) { <time>{{ event.date | date:'medium' }}</time> }
       </div>
     </div>
   }

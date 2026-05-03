@@ -1,12 +1,15 @@
 package com.smartcommerce.common.web;
 
 import com.smartcommerce.common.errors.BusinessException;
+import com.smartcommerce.common.errors.ErrorCode;
 import com.smartcommerce.common.errors.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -64,6 +67,18 @@ public class GlobalExceptionHandler {
             .timestamp(Instant.now())
             .build();
         return ResponseEntity.badRequest().body(ErrorResponse.builder().error(error).build());
+    }
+
+    @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
+    public ResponseEntity<ErrorResponse> handleAccessDenied(Exception ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        var error = ErrorResponse.Error.builder()
+            .code(ErrorCode.FORBIDDEN.getCode())
+            .message("Access denied")
+            .correlationId(MDC.get(CorrelationIdFilter.CORRELATION_ID_MDC_KEY))
+            .timestamp(Instant.now())
+            .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse.builder().error(error).build());
     }
 
     @ExceptionHandler(Exception.class)

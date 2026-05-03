@@ -36,6 +36,31 @@ export class CartService {
   readonly subtotal = computed(() => this._cart()?.total ?? 0);
   readonly discount = computed(() => this._coupon()?.discountAmount ?? 0);
 
+  /**
+   * Sum of `cargoPriceSnapshot` across distinct sellers in the cart. Each
+   * seller charges their own cargo once regardless of how many items the user
+   * buys from them, so we only count the cargo price per seller (not per item
+   * quantity).
+   */
+  readonly shippingTotal = computed(() => {
+    const items = this._cart()?.items ?? [];
+    const cargoPerSeller = new Map<string, number>();
+    for (const it of items) {
+      // Take the highest cargo price per seller (defensive — usually constant)
+      const current = cargoPerSeller.get(it.sellerId) ?? 0;
+      if (it.cargoPriceSnapshot > current) {
+        cargoPerSeller.set(it.sellerId, it.cargoPriceSnapshot);
+      }
+    }
+    let sum = 0;
+    cargoPerSeller.forEach(v => sum += v);
+    return sum;
+  });
+
+  readonly grandTotal = computed(() =>
+    Math.max(0, this.subtotal() + this.shippingTotal() - this.discount()),
+  );
+
   async refresh(): Promise<void> {
     if (!this.auth.isAuthenticated()) {
       this._cart.set(null);

@@ -2,14 +2,18 @@ package com.smartcommerce.user.api;
 
 import com.smartcommerce.user.api.dto.*;
 import com.smartcommerce.user.service.AddressService;
+import com.smartcommerce.user.service.UserFavouriteService;
 import com.smartcommerce.user.service.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -18,6 +22,7 @@ import java.util.UUID;
 public class UserController {
     private final UserProfileService userProfileService;
     private final AddressService addressService;
+    private final UserFavouriteService favouriteService;
 
     @GetMapping("/me")
     public UserProfileDto getMyProfile(@AuthenticationPrincipal String userId) {
@@ -75,5 +80,32 @@ public class UserController {
     @GetMapping("/internal/{userId}")
     public UserProfileDto getInternalProfile(@PathVariable UUID userId) {
         return userProfileService.getByUserId(userId);
+    }
+
+    // ── Favourites ──────────────────────────────────────────────────
+    @GetMapping("/me/favourites")
+    public Page<FavouriteResponse> listFavourites(@AuthenticationPrincipal String userId,
+                                                   Pageable pageable) {
+        return favouriteService.list(UUID.fromString(userId), pageable);
+    }
+
+    @GetMapping("/me/favourites/contains/{productId}")
+    public Map<String, Boolean> containsFavourite(@AuthenticationPrincipal String userId,
+                                                   @PathVariable UUID productId) {
+        return Map.of("favourited", favouriteService.contains(UUID.fromString(userId), productId));
+    }
+
+    @PostMapping("/me/favourites/{productId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public FavouriteResponse addFavourite(@AuthenticationPrincipal String userId,
+                                           @PathVariable UUID productId) {
+        return favouriteService.add(UUID.fromString(userId), productId);
+    }
+
+    @DeleteMapping("/me/favourites/{productId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeFavourite(@AuthenticationPrincipal String userId,
+                                 @PathVariable UUID productId) {
+        favouriteService.remove(UUID.fromString(userId), productId);
     }
 }

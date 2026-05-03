@@ -15,6 +15,9 @@ public record OrderResponse(
     String currency,
     String sagaState,
     Instant expiresAt,
+    Instant createdAt,
+    Instant confirmedAt,
+    Instant deliveredAt,
     List<OrderItemResponse> items
 ) {
 }

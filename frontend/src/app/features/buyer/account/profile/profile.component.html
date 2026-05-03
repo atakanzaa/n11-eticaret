@@ -97,30 +97,36 @@
             (closed)="showAddressModal.set(false)">
     <form (submit)="$event.preventDefault()">
       <div class="row">
-        <sc-form-field [label]="'account.addressTitle' | t" [required]="true">
+        <sc-form-field [label]="'account.addressTitle' | t" [required]="true"
+                       [error]="addressErrors()['label']">
           <input [value]="addressForm().label"
                  (input)="updateAddressForm('label', $any($event.target).value)" />
         </sc-form-field>
-        <sc-form-field [label]="'account.fullName' | t" [required]="true">
+        <sc-form-field [label]="'account.fullName' | t" [required]="true"
+                       [error]="addressErrors()['fullName']">
           <input [value]="addressForm().fullName"
                  (input)="updateAddressForm('fullName', $any($event.target).value)" />
         </sc-form-field>
       </div>
-      <sc-form-field [label]="'account.phoneNumber' | t" [required]="true">
+      <sc-form-field [label]="'account.phoneNumber' | t" [required]="true"
+                     [error]="addressErrors()['phone']">
         <input [value]="addressForm().phone"
                (input)="updateAddressForm('phone', $any($event.target).value)" />
       </sc-form-field>
       <div class="row">
-        <sc-form-field [label]="'account.city' | t" [required]="true">
+        <sc-form-field [label]="'account.city' | t" [required]="true"
+                       [error]="addressErrors()['city']">
           <input [value]="addressForm().city"
                  (input)="updateAddressForm('city', $any($event.target).value)" />
         </sc-form-field>
-        <sc-form-field [label]="'account.district' | t" [required]="true">
+        <sc-form-field [label]="'account.district' | t" [required]="true"
+                       [error]="addressErrors()['district']">
           <input [value]="addressForm().district"
                  (input)="updateAddressForm('district', $any($event.target).value)" />
         </sc-form-field>
       </div>
-      <sc-form-field [label]="'account.addressLine' | t" [required]="true">
+      <sc-form-field [label]="'account.addressLine' | t" [required]="true"
+                     [error]="addressErrors()['fullAddress']">
         <textarea rows="3" [value]="addressForm().fullAddress"
                   (input)="updateAddressForm('fullAddress', $any($event.target).value)"></textarea>
       </sc-form-field>

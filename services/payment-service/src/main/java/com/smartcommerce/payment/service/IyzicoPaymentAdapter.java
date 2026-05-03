@@ -39,10 +39,31 @@ public class IyzicoPaymentAdapter implements PaymentProvider {
 
     @Override
     public InitiateResult initiate(InitiateRequest request) {
+        var iyzicoRequest = toIyzicoRequest(request);
+
+        try {
+            var response = ThreedsInitialize.create(iyzicoRequest, iyzicoOptions);
+            if ("success".equals(response.getStatus())) {
+                return new InitiateResult(true, null, response.getHtmlContent(), null, null);
+            }
+            log.error("Iyzico 3DS initialize failed: errorCode={}, errorMessage={}",
+                response.getErrorCode(), response.getErrorMessage());
+            return new InitiateResult(false, null, null, response.getErrorCode(), response.getErrorMessage());
+        } catch (Exception e) {
+            log.error("Iyzico API call failed", e);
+            return new InitiateResult(false, null, null, "PROVIDER_EXCEPTION", e.getMessage());
+        }
+    }
+
+    CreatePaymentRequest toIyzicoRequest(InitiateRequest request) {
+        var basketPrice = request.basketItems().stream()
+            .map(BasketItem::price)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         var iyzicoRequest = new CreatePaymentRequest();
         iyzicoRequest.setLocale(Locale.TR.getValue());
         iyzicoRequest.setConversationId(request.conversationId());
-        iyzicoRequest.setPrice(request.amount());
+        iyzicoRequest.setPrice(basketPrice);
         iyzicoRequest.setPaidPrice(request.amount());
         iyzicoRequest.setCurrency(Currency.TRY.name());
         iyzicoRequest.setInstallment(request.installment() != null ? request.installment() : 1);
@@ -87,19 +108,7 @@ public class IyzicoPaymentAdapter implements PaymentProvider {
             return bi;
         }).toList();
         iyzicoRequest.setBasketItems(basketItems);
-
-        try {
-            var response = ThreedsInitialize.create(iyzicoRequest, iyzicoOptions);
-            if ("success".equals(response.getStatus())) {
-                return new InitiateResult(true, null, response.getHtmlContent(), null, null);
-            }
-            log.error("Iyzico 3DS initialize failed: errorCode={}, errorMessage={}",
-                response.getErrorCode(), response.getErrorMessage());
-            return new InitiateResult(false, null, null, response.getErrorCode(), response.getErrorMessage());
-        } catch (Exception e) {
-            log.error("Iyzico API call failed", e);
-            return new InitiateResult(false, null, null, "PROVIDER_EXCEPTION", e.getMessage());
-        }
+        return iyzicoRequest;
     }
 
     @Override

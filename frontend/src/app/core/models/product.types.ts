@@ -23,6 +23,7 @@ export interface ProductResponse {
   version: number;
   averageRating: number;
   reviewCount: number;
+  barcode?: string;
 }
 
 export interface CreateProductRequest {
@@ -32,6 +33,7 @@ export interface CreateProductRequest {
   brandId?: string;
   categoryId: string;
   attributes?: Record<string, unknown>;
+  barcode?: string;
 }
 
 export interface UpdateProductRequest {

@@ -106,4 +106,18 @@ public class Payment {
 
     @Version
     private Long version;
+
+    /**
+     * Enforces the PaymentStatus state machine. Throws IllegalStateException
+     * for transitions not allowed by PaymentStatus.canTransitionTo. This
+     * prevents bugs like SUCCEEDED → CANCELLED or terminal-state regressions.
+     */
+    public void transitionTo(PaymentStatus target) {
+        if (target == null) throw new IllegalArgumentException("target status is null");
+        if (this.status != null && !this.status.canTransitionTo(target)) {
+            throw new IllegalStateException(
+                "Illegal payment status transition: " + this.status + " -> " + target + " (paymentId=" + id + ")");
+        }
+        this.status = target;
+    }
 }

@@ -13,6 +13,7 @@ import { ProductApi } from '@core/api/product.api';
 import { InventoryApi } from '@core/api/inventory.api';
 import { CategoryApi } from '@core/api/category.api';
 import { CampaignApi } from '@core/api/campaign.api';
+import { SellerApi } from '@core/api/seller.api';
 import {
   CreateOfferRequest,
   OfferResponse,
@@ -22,6 +23,7 @@ import {
 import { CreateCampaignRequest } from '@core/models/campaign.types';
 import { ProductResponse, CreateProductRequest } from '@core/models/product.types';
 import { CategoryResponse } from '@core/models/category.types';
+import { BackendErrorEnvelope } from '@core/models/common.types';
 import { ToastService } from '@core/toast.service';
 import { TPipe } from '@shared/i18n.pipe';
 import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
@@ -73,11 +75,13 @@ export class SellerProductsComponent implements OnInit {
   private readonly inventoryApi = inject(InventoryApi);
   private readonly categoryApi = inject(CategoryApi);
   private readonly campaignApi = inject(CampaignApi);
+  private readonly sellerApi = inject(SellerApi);
   private readonly toast = inject(ToastService);
 
   readonly rows = signal<OfferRow[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly createError = signal<string | null>(null);
 
   // Categories from admin (for dropdown)
   readonly categories = signal<CategoryResponse[]>([]);
@@ -104,6 +108,7 @@ export class SellerProductsComponent implements OnInit {
     shortDescription: '',
     categoryId: '',
     brandId: '',
+    barcode: '',
   };
 
   // Create form — Step 2: Offer details
@@ -143,7 +148,11 @@ export class SellerProductsComponent implements OnInit {
   readonly rowCount = computed(() => this.rows().length);
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([this.refresh(), this.loadCategories()]);
+    await Promise.all([this.ensureSellerProfile(), this.refresh(), this.loadCategories()]);
+  }
+
+  private async ensureSellerProfile(): Promise<void> {
+    await firstValueFrom(this.sellerApi.me());
   }
 
   private async loadCategories(): Promise<void> {
@@ -226,6 +235,7 @@ export class SellerProductsComponent implements OnInit {
       freeShippingThreshold: undefined,
     };
     this.createStep.set(1);
+    this.createError.set(null);
     this.showCreateModal.set(true);
   }
 
@@ -242,19 +252,48 @@ export class SellerProductsComponent implements OnInit {
   }
 
   async submitCreate(): Promise<void> {
-    this.saving.set(true);
-    try {
-      // Step 1: Create the product
-      const productReq: CreateProductRequest = {
-        title: this.productForm.title,
-        description: this.productForm.description || undefined,
-        shortDescription: this.productForm.shortDescription || undefined,
-        categoryId: this.productForm.categoryId,
-        brandId: this.productForm.brandId || undefined,
-      };
-      const product = await firstValueFrom(this.productApi.create(productReq));
+    this.createError.set(null);
+    if (!this.canProceedStep1() || this.offerForm.price <= 0) {
+      const message = 'Kategori, urun adi ve fiyat alanlarini kontrol edin';
+      this.createError.set(message);
+      this.toast.show(message, 'warn');
+      return;
+    }
 
-      // Step 2: Create the offer on the new product
+    this.saving.set(true);
+    let product: ProductResponse | null = null;
+    try {
+      await this.ensureSellerProfile();
+
+      // Step 1: Optional barcode dedupe — if a barcode is supplied and a
+      // product already exists with it, reuse that product (just add an offer).
+      const barcode = (this.productForm.barcode || '').trim();
+      if (barcode) {
+        try {
+          const existing = await firstValueFrom(this.productApi.byBarcode(barcode));
+          if (existing) {
+            product = existing;
+            this.toast.show(`"${existing.title}" sistemde mevcut, teklifiniz eklenecek`, 'info');
+          }
+        } catch {
+          /* 404 = not found, continue creating */
+        }
+      }
+
+      // Step 2: Create the product if we didn't find one by barcode
+      if (!product) {
+        const productReq: CreateProductRequest = {
+          title: this.productForm.title,
+          description: this.productForm.description || undefined,
+          shortDescription: this.productForm.shortDescription || undefined,
+          categoryId: this.productForm.categoryId,
+          brandId: this.productForm.brandId || undefined,
+          barcode: barcode || undefined,
+        };
+        product = await firstValueFrom(this.productApi.create(productReq, true));
+      }
+
+      // Step 3: Create the offer on the (possibly-existing) product
       const offerReq: CreateOfferRequest = {
         productId: product.id,
         sku: this.offerForm.sku || `SKU-${Date.now()}`,
@@ -266,16 +305,26 @@ export class SellerProductsComponent implements OnInit {
         freeShippingThreshold: this.offerForm.freeShippingThreshold,
         initialStock: this.offerForm.stock,
       };
-      await firstValueFrom(this.offerApi.create(offerReq));
+      await firstValueFrom(this.offerApi.create(offerReq, true));
 
       this.toast.show('Urun ve teklif olusturuldu', 'success');
       this.showCreateModal.set(false);
       await this.refresh();
-    } catch {
-      /* error.interceptor handles toast */
+    } catch (err: unknown) {
+      const message = product
+        ? 'Urun olusturuldu fakat teklif/stok olusturulamadi. Lutfen tekrar deneyin.'
+        : this.extractErrorMessage(err);
+      this.createError.set(message);
+      this.toast.show(message, 'danger');
     } finally {
       this.saving.set(false);
     }
+  }
+
+  private extractErrorMessage(err: unknown): string {
+    const envelope = (err as { error?: BackendErrorEnvelope | string })?.error;
+    if (typeof envelope === 'string') return envelope;
+    return envelope?.error?.message ?? 'Urun olusturulamadi. Lutfen bilgileri kontrol edin.';
   }
 
   // ── Edit ──────────────────────────────────────────────

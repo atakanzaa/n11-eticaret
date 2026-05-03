@@ -38,12 +38,13 @@ import java.util.UUID;
 @Slf4j
 public class GeminiAdapter extends AbstractAiAdapter {
 
-    private static final String DEFAULT_MODEL = "gemini-2.0-flash";
+    private static final String DEFAULT_MODEL = "gemini-2.5-flash";
 
     private static final Map<String, Pricing> PRICING = Map.of(
         "gemini-1.5-pro", Pricing.of(1.25, 5.0),
         "gemini-1.5-flash", Pricing.of(0.075, 0.30),
         "gemini-2.0-flash", Pricing.of(0.10, 0.40),
+        "gemini-2.5-flash", Pricing.of(0.30, 2.50),
         "gemini-2.5-pro", Pricing.of(1.25, 10.0)
     );
 

@@ -37,6 +37,7 @@ export interface OrderResponse {
   expiresAt?: string;
   items: OrderItemResponse[];
   createdAt?: string;
+  confirmedAt?: string;
 }
 
 export interface CheckoutRequest {
@@ -48,7 +49,7 @@ export interface CheckoutRequest {
 export interface CheckoutResponse {
   orderId: string;
   orderNumber: string;
-  status: string;
+  status: OrderStatus;
   grandTotal: number;
   expiresAt?: string;
 }

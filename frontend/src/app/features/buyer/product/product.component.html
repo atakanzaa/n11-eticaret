@@ -46,8 +46,8 @@
       <!-- ── Product Info ────────────────────────── -->
       <div class="info">
         <!-- Brand -->
-        @if (product()!.brandId) {
-          <div class="brand">{{ product()!.brandId }}</div>
+        @if (brandName(); as bn) {
+          <div class="brand">{{ bn }}</div>
         }
 
         <!-- Title -->
@@ -427,6 +427,42 @@
         </sc-tab-panel>
       </sc-tabs>
     </section>
+
+    <!-- ═══════════════ DİĞER SATICILAR ═══════════════ -->
+    @if (otherOffers().length > 0) {
+      <section class="other-sellers">
+        <h2>Diger Saticilar</h2>
+        <div class="other-sellers-list">
+          @for (o of otherOffers(); track o.id) {
+            <div class="other-seller-row">
+              <div class="other-seller-info">
+                <div class="other-seller-name">
+                  {{ sellersByOfferId()[o.sellerId]?.storeName ?? 'Saticı' }}
+                </div>
+                @if (sellersByOfferId()[o.sellerId]?.rating; as rating) {
+                  <div class="other-seller-rating">★ {{ rating | number:'1.1-1' }}</div>
+                }
+              </div>
+              <div class="other-seller-cargo">
+                @if (o.cargoPrice === 0) {
+                  Ücretsiz kargo
+                } @else {
+                  Kargo {{ o.cargoPrice | number:'1.2-2' }} TL
+                }
+              </div>
+              <div class="other-seller-price">
+                {{ o.price | number:'1.2-2' }} TL
+              </div>
+              <button type="button"
+                      class="btn-select-offer"
+                      (click)="selectOffer(o)">
+                Bu saticidan al
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+    }
 
     <!-- ═══════════════ SIMILAR PRODUCTS ═══════════════ -->
     @if (similarProducts().length > 0) {

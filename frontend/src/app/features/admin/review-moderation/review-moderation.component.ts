@@ -6,6 +6,7 @@ import { ReviewApi } from '@core/api/review.api';
 import { ReviewResponse } from '@core/models/review.types';
 import { Page } from '@core/models/common.types';
 import { ToastService } from '@core/toast.service';
+import { I18nService } from '@core/i18n/i18n.service';
 import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { StarRatingComponent } from '@shared/ui/star-rating/star-rating.component';
@@ -33,6 +34,11 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 export class AdminReviewModerationComponent implements OnInit {
   private readonly reviewApi = inject(ReviewApi);
   private readonly toast = inject(ToastService);
+  private readonly i18n = inject(I18nService);
+
+  // Reject reason min/max length
+  readonly REJECT_REASON_MIN = 10;
+  readonly REJECT_REASON_MAX = 500;
 
   readonly reviews = signal<ReviewResponse[]>([]);
   readonly loading = signal(true);
@@ -72,7 +78,7 @@ export class AdminReviewModerationComponent implements OnInit {
     try {
       await firstValueFrom(this.reviewApi.approve(id));
       this.reviews.update((arr) => arr.filter((r) => r.id !== id));
-      this.toast.show('Degerlendirme onaylandi', 'success');
+      this.toast.show(this.i18n.t('admin.reviewApproved'), 'success');
     } catch {
       /* error.interceptor handles toast */
     }
@@ -84,13 +90,18 @@ export class AdminReviewModerationComponent implements OnInit {
     this.rejectModalOpen.set(true);
   }
 
+  isRejectReasonValid(): boolean {
+    const len = this.rejectReason.trim().length;
+    return len >= this.REJECT_REASON_MIN && len <= this.REJECT_REASON_MAX;
+  }
+
   async confirmReject(): Promise<void> {
-    if (!this.rejectTargetId || !this.rejectReason.trim()) return;
+    if (!this.rejectTargetId || !this.isRejectReasonValid()) return;
     this.rejecting.set(true);
     try {
-      await firstValueFrom(this.reviewApi.reject(this.rejectTargetId, this.rejectReason));
+      await firstValueFrom(this.reviewApi.reject(this.rejectTargetId, this.rejectReason.trim()));
       this.reviews.update((arr) => arr.filter((r) => r.id !== this.rejectTargetId));
-      this.toast.show('Degerlendirme reddedildi', 'success');
+      this.toast.show(this.i18n.t('admin.reviewRejected'), 'success');
       this.rejectModalOpen.set(false);
     } catch {
       /* error.interceptor handles toast */

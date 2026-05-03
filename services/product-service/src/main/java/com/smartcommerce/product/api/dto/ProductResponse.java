@@ -20,6 +20,7 @@ public record ProductResponse(
     List<ProductImageDto> images,
     Long version,
     double averageRating,
-    long reviewCount
+    long reviewCount,
+    String barcode
 ) {
 }

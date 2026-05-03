@@ -22,25 +22,28 @@ public class PaymentEventConsumer {
     private final ProcessedEventRepository processedEventRepository;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = {Topics.PAYMENT_SUCCEEDED, Topics.PAYMENT_FAILED}, groupId = "order-service")
+    @KafkaListener(topics = {Topics.PAYMENT_SUCCEEDED, Topics.PAYMENT_FAILED, Topics.PAYMENT_REFUNDED}, groupId = "order-service")
     @Transactional
     public void onPaymentEvent(BaseEvent<?> event) {
         if (event.getEventId() != null && processedEventRepository.existsById(event.getEventId())) return;
         var payload = objectMapper.convertValue(event.getPayload(), JsonNode.class);
         var orderId = UUID.fromString(payload.path("orderId").asText());
-        if (Topics.PAYMENT_SUCCEEDED.equals(topicFromEvent(event))) {
+        var type = event.getEventType();
+        if (EventType.PAYMENT_SUCCEEDED.equals(type)) {
             var paymentIdText = payload.path("paymentId").asText(null);
-            checkoutOrchestrator.confirmPayment(orderId, paymentIdText == null ? UUID.randomUUID() : UUID.fromString(paymentIdText));
-        } else {
+            checkoutOrchestrator.confirmPayment(orderId,
+                paymentIdText == null ? UUID.randomUUID() : UUID.fromString(paymentIdText));
+        } else if (EventType.PAYMENT_FAILED.equals(type)) {
             checkoutOrchestrator.failPayment(orderId, payload.path("reason").asText("PAYMENT_FAILED"));
+        } else if (EventType.PAYMENT_REFUNDED.equals(type)) {
+            // Only act on full refunds. Partial refunds keep order status as-is and
+            // are handled by the return-service flow.
+            if (payload.path("fullyRefunded").asBoolean(false)) {
+                checkoutOrchestrator.markOrderRefunded(orderId);
+            }
         }
         if (event.getEventId() != null) {
             processedEventRepository.save(new ProcessedEvent(event.getEventId(), Instant.now()));
         }
-    }
-
-    private String topicFromEvent(BaseEvent<?> event) {
-        if (EventType.PAYMENT_SUCCEEDED.equals(event.getEventType())) return Topics.PAYMENT_SUCCEEDED;
-        return Topics.PAYMENT_FAILED;
     }
 }

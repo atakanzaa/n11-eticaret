@@ -67,12 +67,17 @@
   size="sm"
   (closed)="rejectModalOpen.set(false)">
   <div class="reject-form">
-    <sc-form-field label="Red Nedeni" [required]="true">
+    <sc-form-field
+      label="Red Nedeni"
+      [required]="true"
+      [error]="rejectReason && rejectReason.trim().length < REJECT_REASON_MIN ? 'En az ' + REJECT_REASON_MIN + ' karakter girin' : ''">
       <textarea
         [(ngModel)]="rejectReason"
         name="rejectReason"
         rows="4"
+        [maxLength]="REJECT_REASON_MAX"
         placeholder="Reddetme nedenini yaziniz..."></textarea>
+      <small class="muted">{{ rejectReason.length }} / {{ REJECT_REASON_MAX }}</small>
     </sc-form-field>
 
     <div class="form-actions">
@@ -80,7 +85,7 @@
       <button
         type="button"
         class="btn-reject"
-        [disabled]="rejecting() || !rejectReason.trim()"
+        [disabled]="rejecting() || !isRejectReasonValid()"
         (click)="confirmReject()">
         @if (rejecting()) {
           Reddediliyor...

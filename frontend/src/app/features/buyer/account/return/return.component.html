@@ -81,8 +81,8 @@
         <button
           type="button"
           class="reason-btn"
-          [class.selected]="selectedReason === r"
-          (click)="selectedReason = r"
+          [class.selected]="selectedReason() === r"
+          (click)="setReason(r)"
         >
           {{ ('returnReason.' + r) | t }}
         </button>
@@ -96,7 +96,8 @@
         class="sc-textarea"
         rows="4"
         [placeholder]="'return.descriptionPlaceholder' | t"
-        [(ngModel)]="description"
+        [ngModel]="description()"
+        (ngModelChange)="description.set($event)"
       ></textarea>
     </sc-form-field>
 

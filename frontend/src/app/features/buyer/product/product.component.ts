@@ -13,11 +13,13 @@ import { firstValueFrom } from 'rxjs';
 
 import { ProductApi } from '@core/api/product.api';
 import { OfferApi } from '@core/api/offer.api';
+import { BrandApi } from '@core/api/brand.api';
 import { InventoryApi } from '@core/api/inventory.api';
 import { ReviewApi } from '@core/api/review.api';
 import { RecommendationApi } from '@core/api/recommendation.api';
 import { SellerApi } from '@core/api/seller.api';
 import { CampaignApi } from '@core/api/campaign.api';
+import { FavouriteApi } from '@core/api/favourite.api';
 import { CampaignResponse } from '@core/models/campaign.types';
 import { CartService } from '@core/cart.service';
 import { ToastService } from '@core/toast.service';
@@ -80,11 +82,13 @@ export class ProductComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly productApi = inject(ProductApi);
   private readonly offerApi = inject(OfferApi);
+  private readonly brandApi = inject(BrandApi);
   private readonly inventoryApi = inject(InventoryApi);
   private readonly reviewApi = inject(ReviewApi);
   private readonly recommendationApi = inject(RecommendationApi);
   private readonly sellerApi = inject(SellerApi);
   private readonly campaignApi = inject(CampaignApi);
+  private readonly favouriteApi = inject(FavouriteApi);
   private readonly cart = inject(CartService);
   private readonly toast = inject(ToastService);
   private readonly i18n = inject(I18nService);
@@ -92,12 +96,27 @@ export class ProductComponent implements OnInit {
 
   // ── Core data signals ───────────────────────────────────────────
   readonly product = signal<ProductResponse | null>(null);
+  readonly brandName = signal<string | null>(null);
+  readonly offers = signal<OfferResponse[]>([]);
   readonly offer = signal<OfferResponse | null>(null);
   readonly inventory = signal<InventoryItemResponse | null>(null);
   readonly seller = signal<SellerDto | null>(null);
   readonly campaign = signal<CampaignResponse | null>(null);
+  readonly sellersByOfferId = signal<Record<string, SellerDto>>({});
   readonly loading = signal(true);
   readonly adding = signal(false);
+
+  /**
+   * Active offers (excluding the currently-selected one), sorted cheapest-first.
+   * Drives the "Diğer Satıcılar" panel on the product detail page.
+   */
+  readonly otherOffers = computed(() => {
+    const all = this.offers();
+    const selected = this.offer();
+    return all
+      .filter(o => o.status === 'ACTIVE' && (!selected || o.id !== selected.id))
+      .sort((a, b) => a.price - b.price);
+  });
 
   // ── Gallery ─────────────────────────────────────────────────────
   readonly imgIdx = signal(0);
@@ -196,12 +215,15 @@ export class ProductComponent implements OnInit {
   readonly reviewFormTitle = signal('');
   readonly reviewFormComment = signal('');
   readonly submittingReview = signal(false);
+  /** Optional verified-purchase orderId from query string. */
+  readonly reviewOrderId = signal<string | null>(null);
 
   // ── Similar products ────────────────────────────────────────────
   readonly similarProducts = signal<ProductResponse[]>([]);
 
   // ── Favourite ───────────────────────────────────────────────────
   readonly fav = signal(false);
+  readonly favLoading = signal(false);
 
   // ── Quantity ─────────────────────────────────────────────────────
   readonly quantity = signal(1);
@@ -212,6 +234,12 @@ export class ProductComponent implements OnInit {
     if (!id) {
       this.loading.set(false);
       return;
+    }
+
+    // Verified purchase: ?orderId=... query → review form'a yansıt; auto-open form
+    const orderIdParam = this.route.snapshot.queryParamMap.get('orderId');
+    if (orderIdParam) {
+      this.reviewOrderId.set(orderIdParam);
     }
 
     try {
@@ -226,22 +254,42 @@ export class ProductComponent implements OnInit {
 
       this.reviewStats.set(stats);
 
-      const chosen = offers.find(o => o.status === 'ACTIVE') ?? offers[0] ?? null;
+      this.offers.set(offers ?? []);
+      // Default to the cheapest active offer; fall back to first offer.
+      const active = (offers ?? []).filter(o => o.status === 'ACTIVE');
+      const chosen = active.length > 0
+        ? active.reduce((a, b) => (a.price <= b.price ? a : b))
+        : (offers ?? [])[0] ?? null;
       this.offer.set(chosen);
 
-      // Inventory + seller + reviews + recommendations in parallel
+      // Pre-fetch all distinct sellers in parallel so the "Diğer Satıcılar"
+      // panel renders immediately on first paint.
+      const distinctSellerIds = Array.from(new Set((offers ?? []).map(o => o.sellerId)));
       const parallel: Promise<void>[] = [];
+      if (distinctSellerIds.length > 0) {
+        parallel.push(
+          Promise.all(distinctSellerIds.map(id =>
+            firstValueFrom(this.sellerApi.byId(id))
+              .then(s => [id, s] as const)
+              .catch(() => null),
+          )).then(results => {
+            const map: Record<string, SellerDto> = {};
+            for (const r of results) {
+              if (r) map[r[0]] = r[1];
+            }
+            this.sellersByOfferId.set(map);
+            if (chosen && map[chosen.sellerId]) {
+              this.seller.set(map[chosen.sellerId]);
+            }
+          }),
+        );
+      }
 
       if (chosen) {
         parallel.push(
           firstValueFrom(this.inventoryApi.byOffer(chosen.id))
             .then(inv => this.inventory.set(inv))
             .catch(() => { /* inventory missing */ }),
-        );
-        parallel.push(
-          firstValueFrom(this.sellerApi.byId(chosen.sellerId))
-            .then(s => this.seller.set(s))
-            .catch(() => { /* seller fetch failed */ }),
         );
         parallel.push(
           firstValueFrom(this.campaignApi.activeByOffer(chosen.id))
@@ -252,6 +300,9 @@ export class ProductComponent implements OnInit {
 
       parallel.push(this.loadReviews(0));
       parallel.push(this.loadSimilarProducts(product.id));
+      if (product.brandId) {
+        parallel.push(this.loadBrandName(product.brandId));
+      }
       parallel.push(
         firstValueFrom(this.recommendationApi.trackView(product.id)).catch(() => {}),
       );
@@ -260,6 +311,11 @@ export class ProductComponent implements OnInit {
           firstValueFrom(this.reviewApi.myReviewForProduct(product.id))
             .then(r => this.myReview.set(r))
             .catch(() => { /* not reviewed yet */ }),
+        );
+        parallel.push(
+          firstValueFrom(this.favouriteApi.contains(product.id))
+            .then(res => this.fav.set(res.favourited))
+            .catch(() => { /* favourites unavailable */ }),
         );
       }
 
@@ -288,6 +344,17 @@ export class ProductComponent implements OnInit {
     this.loadReviews(page);
   }
 
+  // ── Brand name resolution ───────────────────────────────────────
+  private async loadBrandName(brandId: string): Promise<void> {
+    try {
+      const brands = await firstValueFrom(this.brandApi.list());
+      const match = brands.find(b => b.id === brandId);
+      if (match) this.brandName.set(match.name);
+    } catch {
+      // Brand list unavailable; UI falls back to nothing
+    }
+  }
+
   // ── Similar products ────────────────────────────────────────────
   private async loadSimilarProducts(productId: string): Promise<void> {
     try {
@@ -301,6 +368,34 @@ export class ProductComponent implements OnInit {
     } catch {
       /* recommendations unavailable */
     }
+  }
+
+  /**
+   * Switches the active offer (used by the "Diğer Satıcılar" panel). Refetches
+   * inventory and campaign for the new offer and points the seller card at the
+   * new seller. Other tabs (description, attributes, reviews) are product-level
+   * so they don't need to refresh.
+   */
+  selectOffer(next: OfferResponse): void {
+    if (!next || this.offer()?.id === next.id) return;
+    this.offer.set(next);
+    const cachedSeller = this.sellersByOfferId()[next.sellerId];
+    if (cachedSeller) {
+      this.seller.set(cachedSeller);
+    } else {
+      this.sellerApi.byId(next.sellerId).subscribe({
+        next: s => this.seller.set(s),
+        error: () => {},
+      });
+    }
+    this.inventoryApi.byOffer(next.id).subscribe({
+      next: inv => this.inventory.set(inv),
+      error: () => this.inventory.set(null),
+    });
+    this.campaignApi.activeByOffer(next.id).subscribe({
+      next: c => this.campaign.set(c),
+      error: () => this.campaign.set(null),
+    });
   }
 
   // ── Cart actions ────────────────────────────────────────────────
@@ -362,7 +457,7 @@ export class ProductComponent implements OnInit {
 
     const rating = this.reviewFormRating();
     if (rating === 0) {
-      this.toast.show('Lutfen bir puan secin', 'warn');
+      this.toast.show(this.i18n.t('product.pleaseSelectRating'), 'warn');
       return;
     }
 
@@ -383,6 +478,7 @@ export class ProductComponent implements OnInit {
           rating,
           title: this.reviewFormTitle() || undefined,
           comment: this.reviewFormComment() || undefined,
+          orderId: this.reviewOrderId() ?? undefined,
         };
         const displayName = `${user.firstName} ${user.lastName}`.trim() || user.email;
         saved = await firstValueFrom(
@@ -423,7 +519,30 @@ export class ProductComponent implements OnInit {
   }
 
   // ── Favourite ───────────────────────────────────────────────────
-  toggleFavourite(): void {
-    this.fav.set(!this.fav());
+  async toggleFavourite(): Promise<void> {
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/giris'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    const product = this.product();
+    if (!product || this.favLoading()) return;
+    const wasFav = this.fav();
+    // optimistic UI
+    this.fav.set(!wasFav);
+    this.favLoading.set(true);
+    try {
+      if (wasFav) {
+        await firstValueFrom(this.favouriteApi.remove(product.id));
+        this.toast.show(this.i18n.t('product.removedFromFavourites'), 'success');
+      } else {
+        await firstValueFrom(this.favouriteApi.add(product.id));
+        this.toast.show(this.i18n.t('product.addedToFavourites'), 'success');
+      }
+    } catch {
+      // revert
+      this.fav.set(wasFav);
+    } finally {
+      this.favLoading.set(false);
+    }
   }
 }

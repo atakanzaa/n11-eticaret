@@ -23,6 +23,8 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     Optional<Review> findByProductIdAndUserIdAndDeletedAtIsNull(UUID productId, UUID userId);
 
+    Page<Review> findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
     Optional<Review> findByIdAndStatusAndDeletedAtIsNull(UUID id, ReviewStatus status);
 
     // Moderation queue

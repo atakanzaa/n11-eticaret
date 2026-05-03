@@ -41,6 +41,20 @@ spring:
         enable.idempotence: true
         spring.json.add.type.headers: false
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 3000
+            readTimeout: 10000
+            loggerLevel: BASIC
+
+
+services:
+  order:
+    url: ${ORDER_SERVICE_URL:http://localhost:8089}
+
 server:
   port: 8083
   shutdown: graceful
@@ -59,6 +73,13 @@ management:
     tags:
       application: ${spring.application.name}
 
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://tempo:4318/v1/traces}
+
 logging:
   level:
     com.smartcommerce: DEBUG
@@ -73,6 +94,24 @@ springdoc:
     path: /swagger-ui.html
 
 jwt:
-  secret: ${JWT_SECRET:local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+  secret: ${JWT_SECRET:?JWT_SECRET env var must be set (256+ bits)}
   access-token-expiration-ms: 900000
   refresh-token-expiration-ms: 604800000
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 8s
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 5
+        registerHealthIndicator: true
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 12s
+        cancelRunningFuture: true

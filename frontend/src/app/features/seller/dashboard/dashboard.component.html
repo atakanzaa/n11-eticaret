@@ -67,7 +67,8 @@
           />
         </svg>
       } @else {
-        <sc-empty-state icon="📊" title="Henüz veri yok" />
+        <sc-empty-state icon="📊" [title]="'seller.noRevenueYet' | t"
+                        [description]="'seller.noRevenueDescription' | t" />
       }
     </section>
 
@@ -96,7 +97,7 @@
           </tbody>
         </table>
       } @else {
-        <sc-empty-state icon="📋" title="Sipariş verisi bulunamadı" />
+        <sc-empty-state icon="📋" [title]="'seller.noRecentOrders' | t" />
       }
     </section>
   </div>

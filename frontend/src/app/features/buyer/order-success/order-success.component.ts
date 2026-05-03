@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { OrderApi } from '@core/api/order.api';
 import { ShipmentApi } from '@core/api/shipment.api';
+import { CartService } from '@core/cart.service';
 import { OrderResponse } from '@core/models/order.types';
 import { ShipmentResponse } from '@core/models/shipment.types';
 import { TPipe } from '@shared/i18n.pipe';
@@ -21,6 +22,7 @@ export class OrderSuccessComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly orderApi = inject(OrderApi);
   private readonly shipmentApi = inject(ShipmentApi);
+  private readonly cart = inject(CartService);
 
   readonly order = signal<OrderResponse | null>(null);
   readonly shipments = signal<ShipmentResponse[]>([]);
@@ -35,6 +37,7 @@ export class OrderSuccessComponent implements OnInit {
     try {
       const order = await firstValueFrom(this.orderApi.getOrder(id));
       this.order.set(order);
+      this.cart.refresh().catch(() => {});
       try {
         const shipments = await firstValueFrom(this.shipmentApi.byOrder(id));
         this.shipments.set(shipments);

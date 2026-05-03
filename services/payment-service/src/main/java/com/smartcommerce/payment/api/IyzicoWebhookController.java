@@ -13,9 +13,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Map;
 
 /**
@@ -37,16 +41,36 @@ public class IyzicoWebhookController {
     @Value("${app.frontend.callback-base-url:http://localhost:4200}")
     private String frontendBaseUrl;
 
+    /**
+     * Optional shared secret to verify the redirect was issued by Iyzico (or an
+     * upstream proxy that re-signs callbacks). Empty in sandbox; required in
+     * prod. When set, the request must carry header X-Iyzico-Signature with the
+     * HMAC-SHA256 hex digest of "{paymentId}:{conversationId}:{status}".
+     */
+    @Value("${iyzico.webhook.secret:}")
+    private String webhookSecret;
+
     @PostMapping(value = "/callback")
     public ResponseEntity<Void> handleCallback(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String paymentId,
             @RequestParam(required = false) String conversationData,
             @RequestParam(required = false) String conversationId,
-            @RequestParam(required = false) String mdStatus) {
+            @RequestParam(required = false) String mdStatus,
+            @RequestHeader(value = "X-Iyzico-Signature", required = false) String signature) {
 
         log.info("Iyzico callback received: status={}, paymentId={}, conversationId={}, mdStatus={}",
             status, paymentId, conversationId, mdStatus);
+
+        if (webhookSecret != null && !webhookSecret.isBlank()) {
+            if (!verifySignature(paymentId, conversationId, status, signature)) {
+                log.warn("Iyzico callback signature verification FAILED — paymentId={}, conversationId={}",
+                    paymentId, conversationId);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+        } else {
+            log.warn("iyzico.webhook.secret not configured — skipping signature check (DEV ONLY)");
+        }
 
         var payload = new HashMap<String, Object>();
         payload.put("status", status);
@@ -92,5 +116,28 @@ public class IyzicoWebhookController {
     @GetMapping("/health")
     public Map<String, String> health() {
         return Map.of("status", "UP");
+    }
+
+    private boolean verifySignature(String paymentId, String conversationId, String status, String signature) {
+        if (signature == null || signature.isBlank()) return false;
+        try {
+            var mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            var payload = (paymentId == null ? "" : paymentId) + ":"
+                + (conversationId == null ? "" : conversationId) + ":"
+                + (status == null ? "" : status);
+            var expected = HexFormat.of().formatHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
+            return constantTimeEquals(expected, signature);
+        } catch (Exception e) {
+            log.error("Signature verification crashed", e);
+            return false;
+        }
+    }
+
+    private boolean constantTimeEquals(String a, String b) {
+        if (a.length() != b.length()) return false;
+        int diff = 0;
+        for (int i = 0; i < a.length(); i++) diff |= a.charAt(i) ^ b.charAt(i);
+        return diff == 0;
     }
 }

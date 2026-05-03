@@ -13,6 +13,14 @@ public class EmailTemplateService {
                 + ", toplam: " + model.getOrDefault("grandTotal", "-") + " " + model.getOrDefault("currency", "TRY");
             case "ORDER_CANCELLED" -> "Siparisiniz iptal edildi. Siparis no: " + model.getOrDefault("orderNumber", "-")
                 + ", neden: " + model.getOrDefault("reason", "-");
+            case "ORDER_RECEIVED" -> "Merhaba " + model.getOrDefault("name", "") + ", siparişiniz "
+                + model.getOrDefault("orderNumber", "-") + " teslim alındı olarak işaretlendi. "
+                + "Aldığınız ürünleri değerlendirerek diğer alıcılara yardımcı olabilirsiniz.";
+            case "REVIEW_APPROVED" -> "Merhaba " + model.getOrDefault("name", "") + ", "
+                + model.getOrDefault("rating", "-") + " yıldızlı yorumunuz yayınlandı: \""
+                + model.getOrDefault("title", "") + "\". Teşekkürler!";
+            case "ADMIN_ALERT" -> "[ALERT] " + model.getOrDefault("title", "") + " — "
+                + model.toString();
             default -> String.valueOf(model);
         };
     }

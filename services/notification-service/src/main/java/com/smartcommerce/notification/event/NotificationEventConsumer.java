@@ -11,6 +11,7 @@ import com.smartcommerce.notification.repository.ProcessedEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,36 +28,134 @@ public class NotificationEventConsumer {
     private final ProcessedEventRepository processedEventRepository;
     private final ObjectMapper objectMapper;
 
+    @Value("${notifications.admin.email:}")
+    private String adminEmailRecipients;
+
     @KafkaListener(topics = Topics.USER_REGISTERED, groupId = "notification-service")
     @Transactional
     public void onUserRegistered(BaseEvent<?> event) {
         if (alreadyProcessed(event)) return;
-        var payload = objectMapper.convertValue(event.getPayload(), UserRegisteredPayload.class);
+        UserRegisteredPayload payload;
+        try {
+            payload = objectMapper.convertValue(event.getPayload(), UserRegisteredPayload.class);
+            if (payload == null || payload.getUserId() == null || payload.getEmail() == null || payload.getEmail().isBlank()) {
+                throw new IllegalArgumentException("Missing userId or email");
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("Skipping malformed user registration event eventId={}: {}", event.getEventId(), e.getMessage());
+            markProcessed(event);
+            return;
+        }
         enqueue(new EmailJob(payload.getUserId(), "WELCOME", payload.getEmail(), "SmartCommerce'a hos geldin",
             Map.of("name", displayName(payload.getFirstName(), payload.getLastName(), payload.getEmail())),
             correlationId(event)));
         markProcessed(event);
     }
 
-    @KafkaListener(topics = {Topics.ORDER_CONFIRMED, Topics.ORDER_CANCELLED}, groupId = "notification-service")
+    @KafkaListener(topics = {Topics.ORDER_CONFIRMED, Topics.ORDER_CANCELLED, Topics.ORDER_RECEIVED}, groupId = "notification-service")
     @Transactional
     public void onOrderEvent(BaseEvent<?> event) {
         if (alreadyProcessed(event)) return;
-        var payload = objectMapper.convertValue(event.getPayload(), JsonNode.class);
-        var userId = UUID.fromString(payload.path("userId").asText());
+        JsonNode payload;
+        UUID userId;
+        try {
+            payload = objectMapper.convertValue(event.getPayload(), JsonNode.class);
+            var rawUserId = payload.path("userId").asText(null);
+            if (rawUserId == null || rawUserId.isBlank()) {
+                throw new IllegalArgumentException("Missing userId");
+            }
+            userId = UUID.fromString(rawUserId);
+        } catch (IllegalArgumentException e) {
+            log.warn("Skipping malformed order notification event eventId={}: {}", event.getEventId(), e.getMessage());
+            markProcessed(event);
+            return;
+        }
         var user = userClient.getProfile(userId);
-        if (EventType.ORDER_CONFIRMED.equals(event.getEventType())) {
+        var type = event.getEventType();
+        if (EventType.ORDER_CONFIRMED.equals(type)) {
             enqueue(new EmailJob(userId, "ORDER_CONFIRMED", user.email(), "Siparisiniz onaylandi",
                 Map.of("name", user.displayName(),
                     "orderNumber", payload.path("orderNumber").asText("-"),
                     "grandTotal", payload.path("grandTotal").asText("-"),
                     "currency", payload.path("currency").asText("TRY")),
                 correlationId(event)));
-        } else {
+        } else if (EventType.ORDER_CANCELLED.equals(type)) {
             enqueue(new EmailJob(userId, "ORDER_CANCELLED", user.email(), "Siparisiniz iptal edildi",
                 Map.of("name", user.displayName(),
                     "orderNumber", payload.path("orderNumber").asText("-"),
                     "reason", payload.path("reason").asText("ORDER_CANCELLED")),
+                correlationId(event)));
+        } else if (EventType.ORDER_RECEIVED.equals(type)) {
+            enqueue(new EmailJob(userId, "ORDER_RECEIVED", user.email(), "Siparişiniz teslim alındı",
+                Map.of("name", user.displayName(),
+                    "orderNumber", payload.path("orderNumber").asText("-")),
+                correlationId(event)));
+        } else {
+            log.warn("Unsupported order eventType: {}", type);
+        }
+        markProcessed(event);
+    }
+
+    /**
+     * Buyer-facing review events. REVIEW_APPROVED → "yorumun onaylandı" mail.
+     * Other states (CREATED with status PENDING, REJECTED) are intentionally
+     * dropped to avoid noise; admin moderation tools surface those.
+     */
+    @KafkaListener(topics = Topics.REVIEW_APPROVED, groupId = "notification-service")
+    @Transactional
+    public void onReviewApproved(BaseEvent<?> event) {
+        if (alreadyProcessed(event)) return;
+        var payload = objectMapper.convertValue(event.getPayload(), JsonNode.class);
+        var rawUserId = payload.path("userId").asText(null);
+        if (rawUserId == null || rawUserId.isBlank()) {
+            log.warn("REVIEW_APPROVED missing userId, skipping: {}", event.getEventId());
+            markProcessed(event);
+            return;
+        }
+        var userId = UUID.fromString(rawUserId);
+        var user = userClient.getProfile(userId);
+        enqueue(new EmailJob(userId, "REVIEW_APPROVED", user.email(), "Yorumunuz yayında",
+            Map.of("name", user.displayName(),
+                "rating", payload.path("rating").asText("-"),
+                "title", payload.path("title").asText("")),
+            correlationId(event)));
+        markProcessed(event);
+    }
+
+    /**
+     * Operations alerts: low-stock and fraud-flagged orders. We don't have a
+     * standing admin email registry, so the recipient is read from
+     * `notifications.admin.email` (env-configurable, can list multiple comma-
+     * separated). When unset, the event is logged and dropped — no DLQ noise.
+     */
+    @KafkaListener(topics = {Topics.INVENTORY_LOW_STOCK, Topics.ORDER_FRAUD_FLAGGED}, groupId = "notification-service")
+    @Transactional
+    public void onAdminAlert(BaseEvent<?> event) {
+        if (alreadyProcessed(event)) return;
+        var adminEmail = adminEmailRecipients;
+        if (adminEmail == null || adminEmail.isBlank()) {
+            log.info("Admin alert dropped (no notifications.admin.email configured): type={}, eventId={}",
+                event.getEventType(), event.getEventId());
+            markProcessed(event);
+            return;
+        }
+        var payload = objectMapper.convertValue(event.getPayload(), JsonNode.class);
+        if (EventType.INVENTORY_LOW_STOCK.equals(event.getEventType())) {
+            enqueue(new EmailJob(null, "ADMIN_ALERT", adminEmail, "[ALERT] Düşük stok",
+                Map.of(
+                    "title", "Düşük stok uyarısı",
+                    "offerId", payload.path("offerId").asText("-"),
+                    "available", payload.path("availableQuantity").asText("-"),
+                    "threshold", payload.path("threshold").asText("-")
+                ),
+                correlationId(event)));
+        } else { // ORDER_FRAUD_FLAGGED
+            enqueue(new EmailJob(null, "ADMIN_ALERT", adminEmail, "[ALERT] Şüpheli sipariş",
+                Map.of(
+                    "title", "Fraud detection flagged an order",
+                    "orderId", payload.path("orderId").asText("-"),
+                    "reason", payload.path("reason").asText("-")
+                ),
                 correlationId(event)));
         }
         markProcessed(event);

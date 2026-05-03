@@ -105,6 +105,13 @@
                [placeholder]="'seller.shortDescPlaceholder' | t" />
       </sc-form-field>
 
+      <sc-form-field [label]="'seller.barcode' | t"
+                     [hint]="'seller.barcodeHint' | t">
+        <input [(ngModel)]="productForm.barcode" name="barcode"
+               maxlength="32"
+               placeholder="Örn: 8690123456789" />
+      </sc-form-field>
+
       <div class="modal-actions">
         <button type="button" class="btn" (click)="showCreateModal.set(false)">
           {{ 'common.cancel' | t }}
@@ -121,6 +128,10 @@
         <strong>{{ productForm.title }}</strong>
         <span class="selected-category">{{ getCategoryName(productForm.categoryId) }}</span>
       </div>
+
+      @if (createError()) {
+        <p class="error" role="alert">{{ createError() }}</p>
+      }
 
       <sc-form-field label="SKU">
         <input [(ngModel)]="offerForm.sku" name="sku" placeholder="Otomatik olusturulur" />

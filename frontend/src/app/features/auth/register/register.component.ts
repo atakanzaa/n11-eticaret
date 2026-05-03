@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthApi } from '@core/api/auth.api';
 import { AuthStateService } from '@core/auth/auth-state.service';
 import { ToastService } from '@core/toast.service';
+import { I18nService } from '@core/i18n/i18n.service';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 import { TPipe } from '@shared/i18n.pipe';
 
@@ -22,15 +23,20 @@ export class RegisterComponent {
   private readonly auth = inject(AuthStateService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly i18n = inject(I18nService);
 
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
+
+  // TR mobile: +90 prefix optional, then 5 + 9 digits.
+  // Accepts spaces and dashes which are stripped at submit time.
+  private static readonly TR_PHONE_REGEX = /^(\+90|0)?\s*5\d{2}\s*\d{3}\s*\d{2}\s*\d{2}$/;
 
   readonly form = this.fb.group({
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    phone: [''],
+    phone: ['', [Validators.pattern(RegisterComponent.TR_PHONE_REGEX)]],
     password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
@@ -59,6 +65,7 @@ export class RegisterComponent {
   readonly phoneError = computed(() => {
     const ctrl = this.form.controls.phone;
     if (!ctrl.touched || ctrl.valid) return '';
+    if (ctrl.hasError('pattern')) return this.i18n.t('auth.phoneInvalid');
     return '';
   });
 
@@ -79,14 +86,14 @@ export class RegisterComponent {
     this.errorMessage.set(null);
     const v = this.form.getRawValue();
     try {
+      const normalizedPhone = (v.phone ?? '').replace(/[\s-]/g, '') || undefined;
       const response = await firstValueFrom(
         this.authApi.register({
           firstName: v.firstName,
           lastName: v.lastName,
           email: v.email,
-          phone: v.phone || undefined,
+          phone: normalizedPhone,
           password: v.password,
-          roles: ['CUSTOMER'],
         }),
       );
       this.auth.setSession(response);
@@ -94,7 +101,7 @@ export class RegisterComponent {
     } catch (err: unknown) {
       const message = (err as { error?: { error?: { message?: string } } })?.error?.error?.message ?? null;
       this.errorMessage.set(message);
-      this.toast.show('Kayit basarisiz', 'danger');
+      this.toast.show(this.i18n.t('auth.registerFailed'), 'danger');
     } finally {
       this.submitting.set(false);
     }

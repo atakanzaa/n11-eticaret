@@ -5,6 +5,7 @@ import { ReviewApi } from '@core/api/review.api';
 import { ReviewReportResponse } from '@core/models/review.types';
 import { Page } from '@core/models/common.types';
 import { ToastService } from '@core/toast.service';
+import { I18nService } from '@core/i18n/i18n.service';
 import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.component';
@@ -29,6 +30,7 @@ import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog
 export class AdminReviewReportsComponent implements OnInit {
   private readonly reviewApi = inject(ReviewApi);
   private readonly toast = inject(ToastService);
+  private readonly i18n = inject(I18nService);
 
   readonly reports = signal<ReviewReportResponse[]>([]);
   readonly loading = signal(true);
@@ -73,7 +75,7 @@ export class AdminReviewReportsComponent implements OnInit {
     try {
       await firstValueFrom(this.reviewApi.dismissReport(this.dismissTargetId));
       this.reports.update((arr) => arr.filter((r) => r.id !== this.dismissTargetId));
-      this.toast.show('Rapor kaldirildi', 'success');
+      this.toast.show(this.i18n.t('admin.reportDismissed'), 'success');
     } catch {
       /* error.interceptor handles toast */
     } finally {

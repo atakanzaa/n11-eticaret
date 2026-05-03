@@ -55,6 +55,7 @@ export class ProfileComponent implements OnInit {
   readonly editingAddress = signal<AddressDto | null>(null);
   readonly savingAddress = signal(false);
   readonly addressForm = signal<CreateAddressRequest>(this.emptyAddress());
+  readonly addressErrors = signal<Record<string, string>>({});
 
   // Delete address
   readonly showDeleteAddressConfirm = signal(false);
@@ -142,20 +143,50 @@ export class ProfileComponent implements OnInit {
   openAddressModal(): void {
     this.editingAddress.set(null);
     this.addressForm.set(this.emptyAddress());
+    this.addressErrors.set({});
     this.showAddressModal.set(true);
   }
 
   openEditAddressModal(address: AddressDto): void {
     this.editingAddress.set(address);
     this.addressForm.set({ ...address });
+    this.addressErrors.set({});
     this.showAddressModal.set(true);
   }
 
   updateAddressForm(key: string, value: string): void {
     this.addressForm.update(f => ({ ...f, [key]: value }));
+    if (this.addressErrors()[key]) {
+      this.addressErrors.update(errs => {
+        const copy = { ...errs };
+        delete copy[key];
+        return copy;
+      });
+    }
+  }
+
+  private validateAddress(): Record<string, string> {
+    const f = this.addressForm();
+    const errs: Record<string, string> = {};
+    const reqMsg = this.i18n.t('validation.required');
+    if (!f.label?.trim()) errs['label'] = reqMsg;
+    if (!f.fullName?.trim()) errs['fullName'] = reqMsg;
+    if (!f.phone?.trim()) {
+      errs['phone'] = reqMsg;
+    } else if (!/^(\+90|0)?\s*5\d{2}\s*\d{3}\s*\d{2}\s*\d{2}$/.test(f.phone)) {
+      errs['phone'] = this.i18n.t('auth.phoneInvalid');
+    }
+    if (!f.city?.trim()) errs['city'] = reqMsg;
+    if (!f.district?.trim()) errs['district'] = reqMsg;
+    if (!f.fullAddress?.trim()) errs['fullAddress'] = reqMsg;
+    return errs;
   }
 
   async submitAddress(): Promise<void> {
+    const errs = this.validateAddress();
+    this.addressErrors.set(errs);
+    if (Object.keys(errs).length > 0) return;
+
     this.savingAddress.set(true);
     try {
       const form = this.addressForm();

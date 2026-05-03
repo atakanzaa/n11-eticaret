@@ -1,7 +1,8 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SKIP_ERROR_TOAST } from '@core/http/error.interceptor';
 import { Page } from '@core/models/common.types';
 import {
   CreateProductRequest,
@@ -43,8 +44,19 @@ export class ProductApi {
     return this.http.get<ProductResponse>(`${this.base}/${id}`);
   }
 
-  create(request: CreateProductRequest): Observable<ProductResponse> {
-    return this.http.post<ProductResponse>(this.base, request);
+  /**
+   * Pre-create dedupe lookup. 200 → product already exists with this barcode;
+   * 404 → safe to create. Used by the seller "ürün ekle" form to redirect to
+   * "add an offer" instead of duplicating the catalog entry.
+   */
+  byBarcode(barcode: string, skipErrorToast = true): Observable<ProductResponse> {
+    const context = skipErrorToast ? new HttpContext().set(SKIP_ERROR_TOAST, true) : undefined;
+    return this.http.get<ProductResponse>(`${this.base}/by-barcode/${encodeURIComponent(barcode)}`, { context });
+  }
+
+  create(request: CreateProductRequest, skipErrorToast = false): Observable<ProductResponse> {
+    const context = skipErrorToast ? new HttpContext().set(SKIP_ERROR_TOAST, true) : undefined;
+    return this.http.post<ProductResponse>(this.base, request, { context });
   }
 
   update(id: string, request: UpdateProductRequest): Observable<ProductResponse> {

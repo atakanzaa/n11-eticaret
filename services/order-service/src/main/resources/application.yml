@@ -38,6 +38,16 @@ spring:
         enable.idempotence: true
         spring.json.add.type.headers: false
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 3000
+            readTimeout: 10000
+            loggerLevel: BASIC
+
+
 server:
   port: 8089
   shutdown: graceful
@@ -53,6 +63,10 @@ services:
     url: ${PROMOTION_SERVICE_URL:http://localhost:8093}
   fraud:
     url: ${FRAUD_SERVICE_URL:http://localhost:8095}
+  seller:
+    url: ${SELLER_SERVICE_URL:http://localhost:8087}
+  payment:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8086}
 
 management:
   endpoints:
@@ -68,5 +82,30 @@ management:
     tags:
       application: ${spring.application.name}
 
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://tempo:4318/v1/traces}
+
 jwt:
-  secret: ${JWT_SECRET:local-dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+  secret: ${JWT_SECRET:?JWT_SECRET env var must be set (256+ bits)}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 8s
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 5
+        registerHealthIndicator: true
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 12s
+        cancelRunningFuture: true

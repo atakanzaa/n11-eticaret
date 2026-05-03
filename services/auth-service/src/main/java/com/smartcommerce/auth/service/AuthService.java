@@ -46,11 +46,10 @@ public class AuthService {
                 "Email already registered: " + request.email());
         }
 
-        var roles = request.roles().stream()
-            .map(name -> roleRepository.findByName(name.name())
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND,
-                    "Role not found: " + name)))
-            .collect(Collectors.toSet());
+        var customerRole = roleRepository.findByName(RoleName.CUSTOMER.name())
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND,
+                "CUSTOMER role not configured"));
+        var roles = java.util.Set.of(customerRole);
 
         var user = User.builder()
             .email(request.email())
@@ -184,8 +183,8 @@ public class AuthService {
         var alreadySeller = user.getRoles().stream()
             .anyMatch(r -> RoleName.SELLER.name().equals(r.getName()));
         if (alreadySeller) {
-            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, HttpStatus.CONFLICT,
-                "Zaten satıcı hesabınız var");
+            log.info("User {} is already SELLER; returning refreshed seller session", userId);
+            return generateAuthResponse(user);
         }
 
         var sellerRole = roleRepository.findByName(RoleName.SELLER.name())

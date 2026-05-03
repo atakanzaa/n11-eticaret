@@ -34,6 +34,7 @@ public final class EventType {
     public static final String ORDER_CANCELLED = "ORDER_CANCELLED";
     public static final String ORDER_EXPIRED = "ORDER_EXPIRED";
     public static final String ORDER_FRAUD_FLAGGED = "ORDER_FRAUD_FLAGGED";
+    public static final String ORDER_RECEIVED = "ORDER_RECEIVED";
 
     // Payment
     public static final String PAYMENT_INITIATED = "PAYMENT_INITIATED";
@@ -58,6 +59,9 @@ public final class EventType {
     public static final String CART_ITEM_ADDED = "CART_ITEM_ADDED";
     public static final String CART_CHECKOUT_STARTED = "CART_CHECKOUT_STARTED";
     public static final String CART_ABANDONED = "CART_ABANDONED";
+
+    // Coupon / Promotion
+    public static final String COUPON_USED = "COUPON_USED";
 
     // Review
     public static final String REVIEW_CREATED = "REVIEW_CREATED";

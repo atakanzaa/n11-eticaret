@@ -54,7 +54,7 @@ public class OrderQueryService {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
                 "Order cannot be shipped from status " + status);
         }
-        order.setStatus(OrderStatus.SHIPPED);
+        order.transitionTo(OrderStatus.SHIPPED);
         return orderMapper.toResponse(orderRepository.save(order));
     }
 
@@ -82,7 +82,8 @@ public class OrderQueryService {
         var since = LocalDate.now(ZoneOffset.UTC).minusDays(days - 1L).atStartOfDay().toInstant(ZoneOffset.UTC);
         var byDay = new TreeMap<LocalDate, RevenuePoint>();
         for (Object[] row : orderRepository.sellerRevenueByDay(sellerId, since)) {
-            var day = ((Timestamp) row[0]).toInstant().atOffset(ZoneOffset.UTC).toLocalDate();
+            var day = toLocalDate(row[0]);
+            if (day == null) continue;
             byDay.put(day, new RevenuePoint(day, toBigDecimal(row[1]), ((Number) row[2]).longValue()));
         }
         var today = LocalDate.now(ZoneOffset.UTC);
@@ -91,6 +92,34 @@ public class OrderQueryService {
             byDay.putIfAbsent(d, new RevenuePoint(d, BigDecimal.ZERO, 0));
         }
         return byDay.values().stream().toList();
+    }
+
+    /**
+     * PostgreSQL JDBC driver may return DATE_TRUNC results as either
+     * {@link Timestamp}, {@link Instant} or {@link java.time.OffsetDateTime}
+     * depending on driver version + column type. Handle each defensively.
+     */
+    private static LocalDate toLocalDate(Object raw) {
+        if (raw == null) return null;
+        if (raw instanceof Timestamp ts) {
+            return ts.toInstant().atOffset(ZoneOffset.UTC).toLocalDate();
+        }
+        if (raw instanceof Instant inst) {
+            return inst.atOffset(ZoneOffset.UTC).toLocalDate();
+        }
+        if (raw instanceof java.time.OffsetDateTime odt) {
+            return odt.toLocalDate();
+        }
+        if (raw instanceof java.time.LocalDateTime ldt) {
+            return ldt.toLocalDate();
+        }
+        if (raw instanceof java.sql.Date d) {
+            return d.toLocalDate();
+        }
+        if (raw instanceof LocalDate ld) {
+            return ld;
+        }
+        return null;
     }
 
     public AdminOverviewResponse getAdminOverview() {

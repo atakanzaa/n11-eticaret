@@ -12,10 +12,17 @@ import java.util.UUID;
 public interface ProductRepository extends JpaRepository<Product, UUID> {
     Optional<Product> findByIdAndDeletedAtIsNull(UUID id);
     boolean existsBySlug(String slug);
+    Optional<Product> findByBarcodeAndDeletedAtIsNull(String barcode);
 
     @Query("""
         select p from Product p
         where p.deletedAt is null
+          and exists (
+            select 1 from Offer o
+            where o.productId = p.id
+              and o.status = com.smartcommerce.product.domain.OfferStatus.ACTIVE
+              and o.deletedAt is null
+          )
           and (cast(:query as string) is null or lower(p.title) like lower(concat('%', cast(:query as string), '%')))
           and (cast(:categoryId as uuid) is null or p.categoryId = :categoryId)
           and (cast(:brandId as uuid) is null or p.brandId = :brandId)

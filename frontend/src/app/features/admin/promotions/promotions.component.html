@@ -27,7 +27,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (c of coupons(); track c.id) {
+      @for (c of pagedCoupons(); track c.id) {
         <tr>
           <td><code>{{ c.code }}</code></td>
           <td>{{ c.name }}</td>
@@ -55,6 +55,15 @@
       }
     </tbody>
   </table>
+
+  @if (totalPages() > 1) {
+    <sc-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [isFirst]="isFirstPage()"
+      [isLast]="isLastPage()"
+      (pageChange)="onPageChange($event)" />
+  }
 }
 
 <!-- Deactivation Confirm Dialog -->

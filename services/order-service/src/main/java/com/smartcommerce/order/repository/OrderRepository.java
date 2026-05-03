@@ -15,22 +15,37 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByStatusAndExpiresAtLessThanEqual(OrderStatus status, Instant now);
     long countByUserId(UUID userId);
 
-    /** Sum of line_total for the seller's CONFIRMED orders since :since. */
+    /**
+     * Postgres transaction-scoped advisory lock keyed on the user id. Held until
+     * the surrounding @Transactional commits, serializing concurrent checkouts
+     * for the same user. Prevents the duplicate-PAYMENT_PENDING race where two
+     * tabs both reach the inventory-reserve step simultaneously.
+     */
+    @Query(value = "SELECT pg_advisory_xact_lock(hashtext('checkout:' || :userId))", nativeQuery = true)
+    void lockCheckoutForUser(@Param("userId") String userId);
+
+    /** Active in-flight order for the user (status CREATED or PAYMENT_PENDING). */
+    Optional<Order> findFirstByUserIdAndStatusIn(UUID userId, List<OrderStatus> statuses);
+
+    /** Sum of line_total for the seller's paid (or later) orders since :since. */
     @Query(value = """
         SELECT COALESCE(SUM(oi.line_total), 0)
         FROM orders o JOIN order_items oi ON oi.order_id = o.id
         WHERE oi.seller_id = :sellerId
-          AND o.status = 'CONFIRMED'
+          AND o.status IN ('CONFIRMED','PROCESSING','SHIPPED','DELIVERED','COMPLETED','RETURN_REQUESTED','REFUNDED')
           AND o.created_at >= :since
         """, nativeQuery = true)
     BigDecimal sumSellerRevenueSince(@Param("sellerId") UUID sellerId, @Param("since") Instant since);
 
-    /** Pending orders (PENDING or CONFIRMED but not yet shipped) for the seller. */
+    /**
+     * Pending = paid but not yet shipped: CONFIRMED or PROCESSING. Used on the
+     * seller dashboard to show "orders waiting for shipment dispatch".
+     */
     @Query(value = """
         SELECT COUNT(DISTINCT o.id)
         FROM orders o JOIN order_items oi ON oi.order_id = o.id
         WHERE oi.seller_id = :sellerId
-          AND o.status IN ('PENDING', 'CONFIRMED')
+          AND o.status IN ('CONFIRMED', 'PROCESSING')
         """, nativeQuery = true)
     long countPendingForSeller(@Param("sellerId") UUID sellerId);
 
@@ -44,40 +59,44 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                COUNT(DISTINCT o.id) AS orderCount
         FROM orders o JOIN order_items oi ON oi.order_id = o.id
         WHERE oi.seller_id = :sellerId
-          AND o.status = 'CONFIRMED'
+          AND o.status IN ('CONFIRMED','PROCESSING','SHIPPED','DELIVERED','COMPLETED','RETURN_REQUESTED','REFUNDED')
           AND o.created_at >= :since
         GROUP BY DATE_TRUNC('day', o.created_at)
         ORDER BY day ASC
         """, nativeQuery = true)
     List<Object[]> sellerRevenueByDay(@Param("sellerId") UUID sellerId, @Param("since") Instant since);
 
-    /** Platform GMV (sum of grand_total of CONFIRMED orders) since :since. */
+    /** Platform GMV (sum of grand_total of paid+ orders) since :since. */
     @Query(value = """
         SELECT COALESCE(SUM(o.grand_total), 0)
         FROM orders o
-        WHERE o.status = 'CONFIRMED' AND o.created_at >= :since
+        WHERE o.status IN ('CONFIRMED','PROCESSING','SHIPPED','DELIVERED','COMPLETED','RETURN_REQUESTED','REFUNDED')
+          AND o.created_at >= :since
         """, nativeQuery = true)
     BigDecimal sumGmvSince(@Param("since") Instant since);
 
     @Query(value = """
         SELECT COUNT(*)
         FROM orders o
-        WHERE o.created_at >= :since AND o.status NOT IN ('EXPIRED')
+        WHERE o.created_at >= :since
+          AND o.status NOT IN ('EXPIRED','PAYMENT_FAILED','CANCELLED','FRAUD_FLAGGED')
         """, nativeQuery = true)
     long countOrdersSince(@Param("since") Instant since);
 
     @Query(value = """
         SELECT COALESCE(AVG(o.grand_total), 0)
         FROM orders o
-        WHERE o.status = 'CONFIRMED' AND o.created_at >= :since
+        WHERE o.status IN ('CONFIRMED','PROCESSING','SHIPPED','DELIVERED','COMPLETED','RETURN_REQUESTED','REFUNDED')
+          AND o.created_at >= :since
         """, nativeQuery = true)
     BigDecimal averageBasketSince(@Param("since") Instant since);
 
-    /** Distinct seller_ids that have at least one CONFIRMED order since :since. */
+    /** Distinct seller_ids that have at least one paid+ order since :since. */
     @Query(value = """
         SELECT COUNT(DISTINCT oi.seller_id)
         FROM orders o JOIN order_items oi ON oi.order_id = o.id
-        WHERE o.status = 'CONFIRMED' AND o.created_at >= :since
+        WHERE o.status IN ('CONFIRMED','PROCESSING','SHIPPED','DELIVERED','COMPLETED','RETURN_REQUESTED','REFUNDED')
+          AND o.created_at >= :since
         """, nativeQuery = true)
     long countActiveSellersSince(@Param("since") Instant since);
 

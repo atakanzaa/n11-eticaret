@@ -98,6 +98,10 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.INVALID_ORDER_STATE,
                 "Order is not in PAYMENT_PENDING state: " + order.status());
         }
+        if (order.grandTotal() == null || order.grandTotal().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION,
+                "Payment amount must be greater than zero");
+        }
         var user = userClient.getProfile(order.userId());
 
         var conversationId = UUID.randomUUID().toString();
@@ -148,7 +152,7 @@ public class PaymentService {
                 item.offerId().toString(),
                 item.productTitle(),
                 "GENERAL",
-                item.unitPrice()
+                item.lineTotal()
             )).toList(),
             conversationId,
             request.userIp()
@@ -173,7 +177,7 @@ public class PaymentService {
             attempt.setErrorMessage(result.errorMessage());
             paymentAttemptRepository.save(attempt);
 
-            payment.setStatus(PaymentStatus.FAILED);
+            payment.transitionTo(PaymentStatus.FAILED);
             payment.setFailureCode(result.errorCode());
             payment.setFailureMessage(result.errorMessage());
             payment.setFailedAt(Instant.now());
@@ -190,7 +194,7 @@ public class PaymentService {
 
         payment.setProviderPaymentId(result.providerPaymentId());
         payment.setThreeDsHtmlContent(result.threeDsHtmlContent());
-        payment.setStatus(PaymentStatus.THREEDS_PENDING);
+        payment.transitionTo(PaymentStatus.THREEDS_PENDING);
         paymentRepository.save(payment);
 
         outboxService.publish(Topics.PAYMENT_INITIATED, EventType.PAYMENT_INITIATED,
@@ -220,7 +224,7 @@ public class PaymentService {
         }
 
         if (!"success".equals(callback.status())) {
-            payment.setStatus(PaymentStatus.FAILED);
+            payment.transitionTo(PaymentStatus.FAILED);
             payment.setFailureCode("3DS_AUTHENTICATION_FAILED");
             payment.setFailureMessage(callback.mdStatus());
             payment.setFailedAt(Instant.now());
@@ -232,7 +236,7 @@ public class PaymentService {
         if (callback.paymentId() != null && !callback.paymentId().isBlank()) {
             payment.setProviderPaymentId(callback.paymentId());
         }
-        payment.setStatus(PaymentStatus.THREEDS_AUTHENTICATED);
+        payment.transitionTo(PaymentStatus.THREEDS_AUTHENTICATED);
         payment.setThreedsCompletedAt(Instant.now());
         paymentRepository.save(payment);
 
@@ -241,7 +245,7 @@ public class PaymentService {
     }
 
     private void capturePayment(Payment payment, IyzicoCallbackRequest callback) {
-        payment.setStatus(PaymentStatus.CAPTURING);
+        payment.transitionTo(PaymentStatus.CAPTURING);
         paymentRepository.save(payment);
 
         var attemptNum = paymentAttemptRepository.countByPaymentId(payment.getId()) + 1;
@@ -268,7 +272,7 @@ public class PaymentService {
             attempt.setErrorMessage(result.errorMessage());
             paymentAttemptRepository.save(attempt);
 
-            payment.setStatus(PaymentStatus.FAILED);
+            payment.transitionTo(PaymentStatus.FAILED);
             payment.setFailureCode(result.errorCode());
             payment.setFailureMessage(result.errorMessage());
             payment.setFailedAt(Instant.now());
@@ -335,7 +339,7 @@ public class PaymentService {
         paymentRefund.increment();
 
         payment.setRefundedAmount(payment.getRefundedAmount().add(refundAmount));
-        payment.setStatus(payment.getRefundedAmount().compareTo(payment.getPaidAmount()) >= 0
+        payment.transitionTo(payment.getRefundedAmount().compareTo(payment.getPaidAmount()) >= 0
             ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED);
         paymentRepository.save(payment);
 
@@ -366,7 +370,7 @@ public class PaymentService {
     @Transactional
     public void markSucceeded(Payment payment, BigDecimal paidAmount, String cardLastFour,
                               String cardBrand, String providerPaymentTransactionId, boolean reconciled) {
-        payment.setStatus(PaymentStatus.SUCCEEDED);
+        payment.transitionTo(PaymentStatus.SUCCEEDED);
         payment.setPaidAmount(paidAmount);
         payment.setCardLastFour(cardLastFour);
         payment.setCardBrand(cardBrand);

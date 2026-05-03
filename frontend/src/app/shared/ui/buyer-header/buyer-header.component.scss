@@ -72,7 +72,12 @@
 // User dropdown menu
 .user-menu {
   position: relative;
-  summary { list-style: none; &::-webkit-details-marker { display: none; } }
+
+  > .action {
+    background: none;
+    border: 0;
+    font: inherit;
+  }
 }
 
 .dropdown-menu {
@@ -113,4 +118,15 @@
   .top { grid-template-columns: auto 1fr; }
   .search-wrap { grid-column: 1 / -1; order: 3; }
   .lbl { display: none; }
+}
+
+@media (max-width: 540px) {
+  .become-seller-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .top { gap: 12px; padding-top: 10px; padding-bottom: 10px; }
+  .word { display: none; }
+  .actions { gap: 2px; }
+  .badge { font-size: 10px; }
 }

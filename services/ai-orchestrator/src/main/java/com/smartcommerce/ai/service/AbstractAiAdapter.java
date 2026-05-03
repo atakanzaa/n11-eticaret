@@ -38,7 +38,7 @@ public abstract class AbstractAiAdapter implements AiProvider {
     protected abstract RawResult invoke(AiRequest request);
 
     @Override
-    public final AiResponse chat(AiRequest request) {
+    public AiResponse chat(AiRequest request) {
         budgetGuard.check();
 
         var start = Instant.now();

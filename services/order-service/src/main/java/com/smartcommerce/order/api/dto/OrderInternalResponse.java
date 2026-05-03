@@ -25,6 +25,7 @@ public record OrderInternalResponse(
         UUID sellerId,
         int quantity,
         BigDecimal unitPrice,
+        BigDecimal lineTotal,
         String productTitle
     ) {}
 }

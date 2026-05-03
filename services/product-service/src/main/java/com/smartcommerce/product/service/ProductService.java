@@ -1,5 +1,6 @@
 package com.smartcommerce.product.service;
 
+import com.smartcommerce.common.errors.DuplicateResourceException;
 import com.smartcommerce.common.errors.ErrorCode;
 import com.smartcommerce.common.errors.ResourceNotFoundException;
 import com.smartcommerce.common.events.EventType;
@@ -32,6 +33,20 @@ public class ProductService {
     public ProductResponse create(CreateProductRequest request) {
         var category = categoryRepository.findById(request.categoryId())
             .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Category not found"));
+
+        // Barcode dedupe — when present, redirect the seller to add an offer to
+        // the existing product instead of duplicating the catalog entry. The
+        // existingProductId is surfaced via ErrorResponse.details so the
+        // frontend can prompt "use existing" and call POST /api/offers.
+        var barcode = normalizeBarcode(request.barcode());
+        if (barcode != null) {
+            var existing = productRepository.findByBarcodeAndDeletedAtIsNull(barcode);
+            if (existing.isPresent()) {
+                throw new DuplicateResourceException(ErrorCode.DUPLICATE_RESOURCE,
+                    "Product with this barcode already exists: " + existing.get().getId());
+            }
+        }
+
         var product = Product.builder()
             .title(request.title())
             .slug(uniqueSlug(request.title()))
@@ -40,12 +55,30 @@ public class ProductService {
             .brandId(request.brandId())
             .categoryId(category.getId())
             .attributes(request.attributes())
+            .barcode(barcode)
             .status(ProductStatus.DRAFT)
             .build();
         product = productRepository.save(product);
         outboxService.publish(Topics.PRODUCT_CREATED, EventType.PRODUCT_CREATED,
             product.getId().toString(), "PRODUCT", productMapper.toResponse(product));
         return productMapper.toResponse(product);
+    }
+
+    private String normalizeBarcode(String raw) {
+        if (raw == null) return null;
+        var trimmed = raw.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** Lookup endpoint used by the seller "Bu ürün zaten var mı?" preflight. */
+    public ProductResponse findByBarcode(String barcode) {
+        var normalized = normalizeBarcode(barcode);
+        if (normalized == null) {
+            throw new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Barcode is required");
+        }
+        return productRepository.findByBarcodeAndDeletedAtIsNull(normalized)
+            .map(productMapper::toResponse)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Product not found"));
     }
 
     @Transactional

@@ -32,6 +32,16 @@ public class ProductController {
         return productService.getById(id);
     }
 
+    /**
+     * Pre-create lookup used by the seller "ürün ekle" form. Returns 200 + the
+     * existing product when the barcode is already registered, 404 otherwise.
+     * Sellers can then short-circuit to the "add an offer" flow.
+     */
+    @GetMapping("/by-barcode/{barcode}")
+    public ProductResponse getByBarcode(@PathVariable String barcode) {
+        return productService.findByBarcode(barcode);
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     @ResponseStatus(HttpStatus.CREATED)

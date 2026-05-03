@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 class CatalogProjectionServiceTest {
 
     @Mock ProductClient productClient;
+    @Mock com.smartcommerce.catalog.client.InventoryClient inventoryClient;
     @Mock CatalogIndexService indexService;
 
     @Test
@@ -31,8 +32,8 @@ class CatalogProjectionServiceTest {
         var productId = UUID.randomUUID();
         var product = new ProductClient.ProductSummary(
             productId, "iPhone 15", "iphone-15", "Telefon", "Apple iPhone 15",
-            UUID.randomUUID(), UUID.randomUUID(), Map.of(),
-            "ACTIVE", "https://img/1.jpg", List.of(), 0L);
+            UUID.randomUUID(), UUID.randomUUID(), Map.<String, Object>of(),
+            "ACTIVE", "https://img/1.jpg", List.<ProductClient.ImageDto>of(), 0L, 0.0, 0L);
         var offers = List.of(
             offer(productId, new BigDecimal("39999.00")),
             offer(productId, new BigDecimal("41500.00")),
@@ -41,7 +42,7 @@ class CatalogProjectionServiceTest {
         when(productClient.getProduct(productId)).thenReturn(product);
         when(productClient.getOffersForProduct(productId)).thenReturn(offers);
 
-        new CatalogProjectionService(productClient, indexService).rebuildProductDocument(productId.toString());
+        new CatalogProjectionService(productClient, inventoryClient, indexService).rebuildProductDocument(productId.toString());
 
         var captor = ArgumentCaptor.forClass(ProductDocument.class);
         verify(indexService).upsertProduct(captor.capture());
@@ -58,10 +59,10 @@ class CatalogProjectionServiceTest {
         var productId = UUID.randomUUID();
         when(productClient.getProduct(productId)).thenReturn(new ProductClient.ProductSummary(
             productId, "Test", "test", "desc", "short", null, UUID.randomUUID(),
-            Map.of(), "ACTIVE", null, List.of(), 0L));
+            Map.<String, Object>of(), "ACTIVE", null, List.<ProductClient.ImageDto>of(), 0L, 0.0, 0L));
         when(productClient.getOffersForProduct(productId)).thenReturn(List.of());
 
-        new CatalogProjectionService(productClient, indexService).rebuildProductDocument(productId.toString());
+        new CatalogProjectionService(productClient, inventoryClient, indexService).rebuildProductDocument(productId.toString());
 
         verify(indexService, times(1)).deleteProduct(productId.toString());
     }

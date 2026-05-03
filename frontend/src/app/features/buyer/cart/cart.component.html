@@ -49,7 +49,7 @@
               <div class="item-meta">
                 <span class="item-unit-price">{{ item.unitPriceSnapshot | scCurrency }}</span>
                 @if (item.cargoPriceSnapshot === 0) {
-                  <span class="free-shipping-badge">Ucretsiz kargo</span>
+                  <span class="free-shipping-badge">{{ 'cart.freeShipping' | t }}</span>
                 }
               </div>
 
@@ -75,7 +75,7 @@
 
       <!-- Order summary sidebar -->
       <aside class="cart-summary">
-        <h3 class="summary-title">Siparis ozeti</h3>
+        <h3 class="summary-title">{{ 'cart.summaryTitle' | t }}</h3>
 
         <div class="summary-rows">
           <div class="summary-row">
@@ -84,8 +84,12 @@
           </div>
 
           <div class="summary-row">
-            <span>Kargo</span>
-            <span class="free-text">Ucretsiz</span>
+            <span>{{ 'common.shipping' | t }}</span>
+            @if (cart.shippingTotal() === 0) {
+              <span class="free-text">{{ 'cart.freeShipping' | t }}</span>
+            } @else {
+              <span>{{ cart.shippingTotal() | scCurrency }}</span>
+            }
           </div>
 
           @if (cart.discount() > 0) {
@@ -97,7 +101,7 @@
 
           <div class="summary-row total-row">
             <span>{{ 'common.total' | t }}</span>
-            <span>{{ (cart.subtotal() - cart.discount()) | scCurrency }}</span>
+            <span>{{ cart.grandTotal() | scCurrency }}</span>
           </div>
         </div>
 
@@ -127,14 +131,14 @@
         </div>
 
         <button type="button" class="btn-checkout" (click)="proceed()">
-          Odemeye Gec
+          {{ 'cart.proceedCheckout' | t }}
           <span class="btn-arrow">&rarr;</span>
         </button>
 
         <div class="trust-badges">
           <span class="trust-item">&#128274; 3D Secure</span>
           <span class="trust-divider">&middot;</span>
-          <span class="trust-item">KVKK uyumlu guvenli odeme</span>
+          <span class="trust-item">{{ 'cart.trustKvkk' | t }}</span>
         </div>
       </aside>
     </div>

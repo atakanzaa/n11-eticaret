@@ -45,7 +45,7 @@ public class CategoryController {
     @GetMapping("/{slug}/products")
     public Page<ProductResponse> productsByCategory(@PathVariable String slug, Pageable pageable) {
         var category = categoryService.getBySlug(slug);
-        return productService.search(null, category.id(), null, pageable);
+        return productService.search(null, category.id(), null, null, pageable);
     }
 
     @PostMapping

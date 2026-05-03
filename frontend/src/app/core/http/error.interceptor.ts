@@ -1,9 +1,11 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { ToastService } from '@core/toast.service';
 import { I18nService } from '@core/i18n/i18n.service';
 import { BackendErrorEnvelope } from '@core/models/common.types';
+
+export const SKIP_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 
 /**
  * Surfaces backend `ProblemDetail` errors as toasts. Skips 401 because the
@@ -18,6 +20,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((err: HttpErrorResponse) => {
+      if (req.context.get(SKIP_ERROR_TOAST)) {
+        return throwError(() => err);
+      }
       if (err.status === 0) {
         toast.show(i18n.t('common.error'), 'danger');
       } else if (err.status === 401) {

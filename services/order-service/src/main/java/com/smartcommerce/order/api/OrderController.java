@@ -1,6 +1,7 @@
 package com.smartcommerce.order.api;
 
 import com.smartcommerce.order.api.dto.*;
+import com.smartcommerce.order.security.SellerOwnershipGuard;
 import com.smartcommerce.order.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class OrderController {
     private final CheckoutOrchestrator checkoutOrchestrator;
     private final OrderQueryService orderQueryService;
+    private final SellerOwnershipGuard sellerGuard;
 
     @PostMapping("/api/checkout")
     @ResponseStatus(HttpStatus.CREATED)
@@ -40,6 +43,18 @@ public class OrderController {
         return orderQueryService.getMyOrder(UUID.fromString(userId), orderId);
     }
 
+    @PostMapping("/api/orders/{orderId}/cancel")
+    public OrderResponse cancelOrder(@AuthenticationPrincipal String userId,
+                                     @PathVariable UUID orderId) {
+        return checkoutOrchestrator.cancelByUser(UUID.fromString(userId), orderId);
+    }
+
+    @PostMapping("/api/orders/{orderId}/confirm-received")
+    public OrderResponse confirmReceived(@AuthenticationPrincipal String userId,
+                                         @PathVariable UUID orderId) {
+        return checkoutOrchestrator.markOrderReceived(UUID.fromString(userId), orderId);
+    }
+
     @GetMapping("/api/orders/internal/{orderId}")
     public OrderInternalResponse getInternalOrder(@PathVariable UUID orderId) {
         return orderQueryService.getInternal(orderId);
@@ -54,14 +69,20 @@ public class OrderController {
 
     @GetMapping("/api/orders/seller/{sellerId}/kpi")
     @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
-    public SellerOrderKpiResponse getSellerKpi(@PathVariable UUID sellerId) {
+    public SellerOrderKpiResponse getSellerKpi(@AuthenticationPrincipal String userId,
+                                               @PathVariable UUID sellerId,
+                                               Authentication auth) {
+        sellerGuard.requireOwnsSeller(userId, sellerId, auth);
         return orderQueryService.getSellerKpi(sellerId);
     }
 
     @GetMapping("/api/orders/seller/{sellerId}")
     @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
-    public Page<OrderResponse> getSellerOrders(@PathVariable UUID sellerId,
+    public Page<OrderResponse> getSellerOrders(@AuthenticationPrincipal String userId,
+                                               @PathVariable UUID sellerId,
+                                               Authentication auth,
                                                @PageableDefault(size = 20) Pageable pageable) {
+        sellerGuard.requireOwnsSeller(userId, sellerId, auth);
         return orderQueryService.getSellerOrders(sellerId, pageable);
     }
 
@@ -69,14 +90,19 @@ public class OrderController {
     @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
     public OrderResponse markShipped(@AuthenticationPrincipal String userId,
                                      @RequestParam UUID sellerId,
-                                     @PathVariable UUID orderId) {
+                                     @PathVariable UUID orderId,
+                                     Authentication auth) {
+        sellerGuard.requireOwnsSeller(userId, sellerId, auth);
         return orderQueryService.markShipped(sellerId, orderId);
     }
 
     @GetMapping("/api/orders/seller/{sellerId}/revenue")
     @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
-    public List<RevenuePoint> getSellerRevenue(@PathVariable UUID sellerId,
+    public List<RevenuePoint> getSellerRevenue(@AuthenticationPrincipal String userId,
+                                               @PathVariable UUID sellerId,
+                                               Authentication auth,
                                                @RequestParam(defaultValue = "30") int days) {
+        sellerGuard.requireOwnsSeller(userId, sellerId, auth);
         return orderQueryService.getSellerRevenueSeries(sellerId, days);
     }
 

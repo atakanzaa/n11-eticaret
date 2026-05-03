@@ -54,7 +54,12 @@
   </section>
 
   <section>
-    <h3>{{ 'fraud.blacklist' | t }} ({{ blacklist().length }})</h3>
+    <div class="section-header">
+      <h3>{{ 'fraud.blacklist' | t }} ({{ blacklist().length }})</h3>
+      <button type="button" class="sc-btn sc-btn-primary sc-btn-sm" (click)="openAddModal()">
+        {{ 'fraud.addToBlacklist' | t }}
+      </button>
+    </div>
     @if (blacklist().length === 0) {
       <sc-empty-state
         icon="ban"
@@ -67,9 +72,71 @@
             <sc-status-badge [label]="'blacklistType.' + b.blacklistType | t" variant="neutral" />
             <code>{{ b.value }}</code>
             <span class="muted">{{ b.reason }}</span>
+            <button type="button" class="bl-delete" (click)="openDeleteConfirm(b)"
+                    [attr.aria-label]="'common.delete' | t">
+              &times;
+            </button>
           </li>
         }
       </ul>
     }
   </section>
 }
+
+<!-- Add to blacklist modal -->
+<sc-modal [open]="showAddModal()"
+          [title]="'fraud.addToBlacklist' | t"
+          size="base"
+          (closed)="showAddModal.set(false)">
+  <form (submit)="$event.preventDefault()">
+    <sc-form-field [label]="'fraud.blacklistType' | t" [required]="true">
+      <select class="sc-input"
+              [ngModel]="form().blacklistType"
+              name="type"
+              (ngModelChange)="updateForm('blacklistType', $event)">
+        @for (t of blacklistTypes; track t) {
+          <option [value]="t">{{ 'blacklistType.' + t | t }}</option>
+        }
+      </select>
+    </sc-form-field>
+
+    <sc-form-field [label]="'fraud.blacklistValue' | t" [required]="true"
+                   [error]="formErrors()['value']">
+      <input class="sc-input"
+             [ngModel]="form().value"
+             name="value"
+             (ngModelChange)="updateForm('value', $event)" />
+    </sc-form-field>
+
+    <sc-form-field [label]="'fraud.blacklistReason' | t" [required]="true"
+                   [error]="formErrors()['reason']">
+      <input class="sc-input"
+             [ngModel]="form().reason"
+             name="reason"
+             (ngModelChange)="updateForm('reason', $event)" />
+    </sc-form-field>
+
+    <div class="modal-actions">
+      <button type="button" class="sc-btn" (click)="showAddModal.set(false)">
+        {{ 'common.cancel' | t }}
+      </button>
+      <button type="button" class="sc-btn sc-btn-primary" [disabled]="saving()" (click)="submitAdd()">
+        @if (saving()) {
+          <sc-spinner size="sm" />
+        } @else {
+          {{ 'common.add' | t }}
+        }
+      </button>
+    </div>
+  </form>
+</sc-modal>
+
+<!-- Delete confirm -->
+<sc-confirm-dialog
+  [open]="showDeleteConfirm()"
+  [title]="'common.confirm' | t"
+  [message]="'fraud.blacklistRemoveConfirm' | t"
+  [confirmLabel]="'common.delete' | t"
+  variant="danger"
+  (confirmed)="confirmDelete()"
+  (cancelled)="showDeleteConfirm.set(false)" />

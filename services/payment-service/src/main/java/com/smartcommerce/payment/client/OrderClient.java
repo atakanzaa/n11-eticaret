@@ -34,6 +34,7 @@ public interface OrderClient {
         UUID productId,
         int quantity,
         BigDecimal unitPrice,
+        BigDecimal lineTotal,
         String productTitle
     ) {}
 }

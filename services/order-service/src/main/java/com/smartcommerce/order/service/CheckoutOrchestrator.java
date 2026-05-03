@@ -33,6 +33,7 @@ public class CheckoutOrchestrator {
     private final InventoryClient inventoryClient;
     private final FraudDetectionClient fraudDetectionClient;
     private final PromotionClient promotionClient;
+    private final PaymentClient paymentClient;
     private final OrderRepository orderRepository;
     private final SagaLogRepository sagaLogRepository;
     private final IdempotencyKeyRepository idempotencyKeyRepository;
@@ -47,7 +48,8 @@ public class CheckoutOrchestrator {
 
     public CheckoutOrchestrator(CartClient cartClient, UserClient userClient,
                                 InventoryClient inventoryClient, FraudDetectionClient fraudDetectionClient,
-                                PromotionClient promotionClient, OrderRepository orderRepository,
+                                PromotionClient promotionClient, PaymentClient paymentClient,
+                                OrderRepository orderRepository,
                                 SagaLogRepository sagaLogRepository,
                                 IdempotencyKeyRepository idempotencyKeyRepository,
                                 OutboxService outboxService, OrderMapper orderMapper,
@@ -57,6 +59,7 @@ public class CheckoutOrchestrator {
         this.inventoryClient = inventoryClient;
         this.fraudDetectionClient = fraudDetectionClient;
         this.promotionClient = promotionClient;
+        this.paymentClient = paymentClient;
         this.orderRepository = orderRepository;
         this.sagaLogRepository = sagaLogRepository;
         this.idempotencyKeyRepository = idempotencyKeyRepository;
@@ -96,6 +99,18 @@ public class CheckoutOrchestrator {
             }
         }
 
+        // Serialize concurrent checkouts for the same user to avoid duplicate
+        // PAYMENT_PENDING orders. Lock is released when the @Transactional commits.
+        orderRepository.lockCheckoutForUser(userId.toString());
+
+        // After acquiring the lock, refuse if user already has an in-flight order.
+        var existing = orderRepository.findFirstByUserIdAndStatusIn(
+            userId, List.of(OrderStatus.CREATED, OrderStatus.PAYMENT_PENDING));
+        if (existing.isPresent()) {
+            throw new BusinessException(ErrorCode.IDEMPOTENCY_KEY_CONFLICT, HttpStatus.CONFLICT,
+                "An order is already in progress for this user (orderId=" + existing.get().getId() + ")");
+        }
+
         Order order = null;
         try {
             var validation = logStep(null, "VALIDATE_CART", () -> cartClient.validateCart(userId));
@@ -117,7 +132,7 @@ public class CheckoutOrchestrator {
                 new FraudDetectionClient.FraudCheckRequest(activeOrder.getId(), userId, activeOrder.getGrandTotal(),
                     activeOrder.getCurrency(), validation.cart().itemCount(), null, firstOrder)));
             if (fraud.flagged()) {
-                order.setStatus(OrderStatus.CANCELLED);
+                order.transitionTo(OrderStatus.CANCELLED);
                 order.setSagaState(SagaState.FAILED.name());
                 order.setSagaFailedAt(Instant.now());
                 order.setSagaFailureReason(fraud.reason());
@@ -134,7 +149,7 @@ public class CheckoutOrchestrator {
                     new InventoryClient.ReserveRequest(activeOrder.getId(), item.offerId(), item.quantity(), reservationKey)));
             }
 
-            order.setStatus(OrderStatus.PAYMENT_PENDING);
+            order.transitionTo(OrderStatus.PAYMENT_PENDING);
             order.setSagaState(SagaState.PAYMENT_INITIATED.name());
             order.setExpiresAt(Instant.now().plus(PAYMENT_TTL));
             order = orderRepository.save(order);
@@ -168,7 +183,7 @@ public class CheckoutOrchestrator {
         }
 
         inventoryClient.confirm(orderId);
-        order.setStatus(OrderStatus.CONFIRMED);
+        order.transitionTo(OrderStatus.CONFIRMED);
         order.setPaymentId(paymentId);
         order.setSagaState(SagaState.COMPLETED.name());
         order.setSagaCompletedAt(Instant.now());
@@ -206,11 +221,23 @@ public class CheckoutOrchestrator {
 
     private void recordCouponUsage(Order order) {
         if (order.getCouponCode() == null || order.getCouponDiscount() == null) return;
+        // Publish via outbox first — guaranteed at-least-once delivery to
+        // promotion-service even if the sync call below fails. The promotion
+        // consumer must be idempotent (keyed by orderId).
+        outboxService.publish(Topics.COUPON_USED, EventType.COUPON_USED,
+            order.getId().toString(), "ORDER",
+            Map.of(
+                "orderId", order.getId(),
+                "userId", order.getUserId(),
+                "couponCode", order.getCouponCode(),
+                "discountAmount", order.getCouponDiscount()
+            ));
         try {
             promotionClient.apply(new PromotionClient.ApplyRequest(
                 order.getCouponCode(), order.getUserId(), order.getId(), order.getCouponDiscount()));
         } catch (Exception e) {
-            log.warn("Failed to record coupon usage for order {}: {}", order.getId(), e.getMessage());
+            log.warn("Sync coupon-usage call failed for order {} — event will be re-applied via Kafka: {}",
+                order.getId(), e.getMessage());
         }
     }
 
@@ -219,6 +246,138 @@ public class CheckoutOrchestrator {
         var order = orderRepository.findById(orderId)
             .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ORDER_NOT_FOUND, "Order not found"));
         cancelPaymentPendingOrder(order, reason == null ? "PAYMENT_FAILED" : reason, EventType.ORDER_CANCELLED);
+    }
+
+    /**
+     * User-initiated order cancellation. Allowed only while the order has not
+     * yet been dispatched (CREATED, PAYMENT_PENDING, CONFIRMED, PROCESSING).
+     * Anything past SHIPPED requires the return flow instead.
+     */
+    @Transactional
+    public OrderResponse cancelByUser(UUID userId, UUID orderId) {
+        var order = orderRepository.findByIdAndUserId(orderId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ORDER_NOT_FOUND, "Order not found"));
+
+        var allowed = Set.of(
+            OrderStatus.CREATED,
+            OrderStatus.PAYMENT_PENDING,
+            OrderStatus.CONFIRMED,
+            OrderStatus.PROCESSING
+        );
+        if (!allowed.contains(order.getStatus())) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, HttpStatus.CONFLICT,
+                "Bu sipariş artık iptal edilemez (durum: " + order.getStatus() + ")");
+        }
+
+        // Inventory release best-effort. Saga compensation flows will retry on failure.
+        try {
+            inventoryClient.release(order.getId());
+        } catch (Exception e) {
+            log.warn("Inventory release failed during user cancel for order {}: {}", order.getId(), e.getMessage());
+        }
+
+        // If payment was already captured (status CONFIRMED has paymentId set on
+        // confirmPayment), trigger a full refund. Best-effort — failure logged and
+        // a manual refund can be issued via the admin endpoint.
+        if (order.getStatus() == OrderStatus.CONFIRMED && order.getPaymentId() != null) {
+            try {
+                paymentClient.refund(order.getPaymentId(),
+                    new PaymentClient.RefundRequest(order.getGrandTotal(), "USER_CANCELLED"));
+            } catch (Exception e) {
+                log.error("Refund failed during user cancel for order {} payment {}: {}",
+                    order.getId(), order.getPaymentId(), e.getMessage());
+            }
+        }
+
+        order.transitionTo(OrderStatus.CANCELLED);
+        order.setSagaState(SagaState.COMPENSATED.name());
+        order.setSagaFailedAt(Instant.now());
+        order.setSagaFailureReason("USER_CANCELLED");
+        order.setCancelledAt(Instant.now());
+        order = orderRepository.save(order);
+
+        sagaLogRepository.save(successLog(order.getId(), "USER_CANCEL",
+            objectMapper.valueToTree(Map.of("userId", userId.toString()))));
+        outboxService.publish(Topics.ORDER_CANCELLED, EventType.ORDER_CANCELLED,
+            order.getId().toString(), "ORDER",
+            Map.of("orderId", order.getId(), "orderNumber", order.getOrderNumber(),
+                "userId", order.getUserId(), "reason", "USER_CANCELLED"));
+
+        return orderMapper.toResponse(order);
+    }
+
+    /**
+     * Customer-driven delivery confirmation. Used by the "Siparişi Teslim Aldım"
+     * button — moves SHIPPED → DELIVERED and publishes ORDER_RECEIVED so
+     * notification/seller-rating/review-eligibility downstream can react.
+     *
+     * Idempotent: if the order is already at a terminal/post-delivery state
+     * (DELIVERED/COMPLETED/RETURN_REQUESTED/REFUNDED) the call is a no-op and
+     * returns the current view. Concurrent click protection is the user's
+     * responsibility on the client; the server stays consistent either way.
+     */
+    @Transactional
+    public OrderResponse markOrderReceived(UUID userId, UUID orderId) {
+        var order = orderRepository.findByIdAndUserId(orderId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ORDER_NOT_FOUND, "Order not found"));
+
+        // Idempotent acknowledgement for already-acknowledged states.
+        var current = order.getStatus();
+        if (current == OrderStatus.DELIVERED
+            || current == OrderStatus.COMPLETED
+            || current == OrderStatus.RETURN_REQUESTED
+            || current == OrderStatus.REFUNDED) {
+            return orderMapper.toResponse(order);
+        }
+        if (current != OrderStatus.SHIPPED && current != OrderStatus.PROCESSING && current != OrderStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, HttpStatus.CONFLICT,
+                "Bu sipariş için teslim alındı işaretlenemez (durum: " + current + ")");
+        }
+
+        // PROCESSING/CONFIRMED → SHIPPED → DELIVERED transition chain. We allow
+        // confirming directly from PROCESSING/CONFIRMED to be tolerant of mock
+        // shipment flows where SHIPPED was never recorded.
+        if (current != OrderStatus.SHIPPED) {
+            order.transitionTo(OrderStatus.SHIPPED);
+        }
+        order.transitionTo(OrderStatus.DELIVERED);
+        order.setDeliveredAt(Instant.now());
+        order = orderRepository.save(order);
+
+        var sellerIds = order.getItems().stream()
+            .map(OrderItem::getSellerId)
+            .distinct()
+            .toList();
+        sagaLogRepository.save(successLog(order.getId(), "ORDER_RECEIVED",
+            objectMapper.valueToTree(Map.of("userId", userId.toString()))));
+        outboxService.publish(Topics.ORDER_RECEIVED, EventType.ORDER_RECEIVED,
+            order.getId().toString(), "ORDER",
+            Map.of(
+                "orderId", order.getId(),
+                "orderNumber", order.getOrderNumber(),
+                "userId", order.getUserId(),
+                "sellerIds", sellerIds,
+                "receivedAt", order.getDeliveredAt()
+            ));
+        return orderMapper.toResponse(order);
+    }
+
+    /**
+     * Idempotently marks the order REFUNDED in response to PAYMENT_REFUNDED.
+     * Used when a refund originates outside the order-service flow (admin refund,
+     * return approval, etc.) so the order's lifecycle reflects the money state.
+     */
+    @Transactional
+    public void markOrderRefunded(UUID orderId) {
+        var order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ORDER_NOT_FOUND, "Order not found"));
+        if (order.getStatus() == OrderStatus.REFUNDED) return;
+        try {
+            order.transitionTo(OrderStatus.REFUNDED);
+            orderRepository.save(order);
+        } catch (IllegalStateException e) {
+            log.warn("Cannot transition order {} ({}) to REFUNDED: {}", orderId, order.getStatus(), e.getMessage());
+        }
     }
 
     @Transactional
@@ -281,7 +440,7 @@ public class CheckoutOrchestrator {
         } catch (Exception e) {
             log.warn("Inventory release failed for order {} during compensation: {}", order.getId(), e.getMessage());
         }
-        order.setStatus(OrderStatus.CANCELLED);
+        order.transitionTo(OrderStatus.CANCELLED);
         order.setSagaState(SagaState.COMPENSATED.name());
         order.setSagaFailedAt(Instant.now());
         order.setSagaFailureReason(reason);

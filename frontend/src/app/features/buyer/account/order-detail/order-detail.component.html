@@ -2,70 +2,89 @@
   <div class="spinner-wrap">
     <sc-spinner size="lg" [label]="'common.loading' | t" />
   </div>
-} @else if (order()) {
-  <sc-breadcrumb [items]="breadcrumbs()" />
+} @else {
+  @if (order(); as o) {
+    <sc-breadcrumb [items]="breadcrumbs()" />
 
-  <div class="page-header">
-    <div class="header-left">
-      <h2>{{ 'orders.orderPrefix' | t }} #{{ order()!.orderNumber }}</h2>
-      <span class="order-date">{{ order()!.createdAt | date: 'd MMMM y, HH:mm' : '' : 'tr-TR' }}</span>
+    <div class="page-header">
+      <div class="header-left">
+        <h2>
+          {{ 'orders.orderPrefix' | t }}
+          <span class="order-id-mono">#{{ o.orderNumber }}</span>
+        </h2>
+        <span class="order-date">{{ o.createdAt | date: 'd MMMM y, HH:mm' : '' : 'tr-TR' }}</span>
+      </div>
+      <sc-status-badge
+        [label]="('orderStatus.' + o.status) | t"
+        [variant]="statusVariant(o.status)"
+      />
     </div>
-    <sc-status-badge
-      [label]="('orderStatus.' + order()!.status) | t"
-      [variant]="statusVariant(order()!.status)"
-    />
-  </div>
 
-  <div class="grid">
-    <div class="main-col">
-      <!-- Timeline / Shipment tracking -->
-      @if (timelineEvents().length > 0) {
-        <section class="card">
+    <div class="grid">
+      <div class="main-col">
+      <!-- Timeline / Shipment tracking — always shown so user sees full journey -->
+      <section class="card">
+        <div class="status-header">
           <h3>{{ 'orders.orderStatus' | t }}</h3>
-          <sc-timeline [events]="timelineEvents()" />
-
-          @if (shipments().length > 0) {
-            @for (s of shipments(); track s.id) {
-              <div class="cargo">
-                <div class="cargo-info">
-                  <span>{{ 'orders.cargo' | t }}: <strong>{{ s.cargoProvider }}</strong></span>
-                  @if (s.trackingNumber) {
-                    <code>{{ s.trackingNumber }}</code>
-                  }
-                </div>
-                @if (s.trackingUrl) {
-                  <a [href]="s.trackingUrl" target="_blank" rel="noopener" class="cargo-link">
-                    {{ 'orders.trackCargo' | t }} &rarr;
-                  </a>
-                }
-                @if (s.estimatedDeliveryDate) {
-                  <div class="cargo-eta">
-                    {{ 'orders.estimatedDelivery' | t }}: {{ s.estimatedDeliveryDate | date: 'd MMMM y' : '' : 'tr-TR' }}
-                  </div>
-                }
-              </div>
-            }
+          @if (estimatedEta(); as eta) {
+            <span class="status-eta">
+              {{ 'orders.estimatedDelivery' | t }}:
+              <strong>{{ eta | date: 'd MMMM y' : '' : 'tr-TR' }}</strong>
+            </span>
           }
-        </section>
-      }
+        </div>
+
+        <sc-timeline [events]="timelineEvents()" />
+
+        @for (s of shipments(); track s.id) {
+          <div class="cargo">
+            <div class="cargo-info">
+              <span>{{ 'orders.cargo' | t }}: <strong>{{ s.cargoProvider }}</strong></span>
+              @if (s.trackingNumber) {
+                <code>{{ s.trackingNumber }}</code>
+              }
+            </div>
+            @if (s.trackingUrl) {
+              <a [href]="s.trackingUrl" target="_blank" rel="noopener" class="cargo-link">
+                {{ 'orders.trackCargo' | t }} &rarr;
+              </a>
+            }
+          </div>
+        }
+      </section>
 
       <!-- Order items -->
       <section class="card">
         <h3>{{ 'orders.products' | t }}</h3>
-        @for (item of order()!.items; track item.id) {
+        @for (item of o.items; track item.id) {
           <div class="ln">
             <div class="thumb">
               @if (item.productImageUrl) {
                 <img [src]="item.productImageUrl" [alt]="item.productTitle" />
               } @else {
-                <div class="thumb-placeholder"></div>
+                <div class="thumb-placeholder" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                  </svg>
+                </div>
               }
             </div>
             <div class="item-info">
-              <div class="item-title">{{ item.productTitle }}</div>
+              <a class="item-title" [routerLink]="['/urun', item.productId]">
+                {{ item.productTitle || ('orders.unnamedProduct' | t) }}
+              </a>
               <div class="item-meta">{{ item.quantity }} {{ 'common.piece' | t }}</div>
               @if (item.sellerName) {
                 <div class="item-seller">{{ item.sellerName }}</div>
+              }
+              @if (canReviewItem()) {
+                <a class="btn-link"
+                   [routerLink]="['/urun', item.productId]"
+                   [queryParams]="{ orderId: o.id }">
+                  {{ 'orders.reviewItem' | t }} &rarr;
+                </a>
               }
             </div>
             <div class="item-price">{{ item.lineTotal | scCurrency }}</div>
@@ -75,13 +94,22 @@
 
       <!-- Action buttons -->
       <div class="actions">
+        @if (canMarkReceived()) {
+          <button type="button" class="btn btn-receive" (click)="openReceiveConfirm()" [disabled]="confirmingReceipt()">
+            @if (confirmingReceipt()) {
+              <sc-spinner size="sm" />
+            } @else {
+              &#10003; {{ 'orders.markReceived' | t }}
+            }
+          </button>
+        }
         @if (canReturn()) {
-          <a [routerLink]="['/hesap/iade', order()!.id]" class="btn btn-return">
+          <a [routerLink]="['/hesap/iade', o.id]" class="btn btn-return">
             &#8617; {{ 'orders.startReturn' | t }}
           </a>
         }
         @if (canCancel()) {
-          <button type="button" class="btn btn-cancel" (click)="cancelOrder()" [disabled]="cancelling()">
+          <button type="button" class="btn btn-cancel" (click)="openCancelConfirm()" [disabled]="cancelling()">
             @if (cancelling()) {
               <sc-spinner size="sm" />
             } @else {
@@ -94,23 +122,29 @@
 
     <aside class="sidebar">
       <!-- Shipping address -->
-      @if (shipments().length > 0) {
+      @if (hasShippingAddress()) {
         <section class="card">
           <h3>{{ 'orders.shippingAddress' | t }}</h3>
-          @for (s of shipments(); track s.id) {
+          @for (s of displayShipments(); track s.id) {
             <div class="addr">
-              <strong>{{ s.recipientFullName }}</strong>
-              <p>{{ s.district }}/{{ s.city }}</p>
+              @if (s.recipientFullName) {
+                <strong>{{ s.recipientFullName }}</strong>
+              }
+              @if (s.district || s.city) {
+                <p>{{ s.district }}{{ s.district && s.city ? ' / ' : '' }}{{ s.city }}</p>
+              }
             </div>
           }
         </section>
       }
 
-      <!-- Payment info -->
-      @if (payment(); as pay) {
+      <!-- Payment info — only shown when at least one displayable field exists -->
+      @if (hasPaymentInfo() && payment(); as pay) {
         <section class="card">
           <h3>{{ 'orders.payment' | t }}</h3>
-          <div class="pay-status">{{ ('paymentStatus.' + pay.status) | t }}</div>
+          @if (pay.status) {
+            <div class="pay-status">{{ ('paymentStatus.' + pay.status) | t }}</div>
+          }
           @if (pay.cardLastFour) {
             <div class="pay-card">
               {{ pay.cardBrand }} **** {{ pay.cardLastFour }}
@@ -129,19 +163,47 @@
         <h3>{{ 'orders.summary' | t }}</h3>
         <div class="summary-row">
           <span>{{ 'orders.itemCount' | t }}</span>
-          <span>{{ order()!.items.length }}</span>
+          <span>{{ o.items.length }}</span>
         </div>
+        @if (payment()?.status; as payStatus) {
+          <div class="summary-row">
+            <span>{{ 'orders.payment' | t }}</span>
+            <sc-status-badge
+              size="sm"
+              [label]="('paymentStatus.' + payStatus) | t"
+              [variant]="paymentVariant(payStatus)" />
+          </div>
+        }
         <div class="summary-row total">
           <span>{{ 'common.total' | t }}</span>
-          <span>{{ order()!.grandTotal | scCurrency }}</span>
+          <span>{{ o.grandTotal | scCurrency }}</span>
         </div>
       </section>
-    </aside>
-  </div>
-} @else {
-  <sc-empty-state
-    icon="search"
-    [title]="'orders.notFound' | t"
-    [description]="'orders.notFoundDescription' | t"
-  />
+      </aside>
+    </div>
+  } @else {
+    <sc-empty-state
+      icon="search"
+      [title]="'orders.notFound' | t"
+      [description]="'orders.notFoundDescription' | t"
+    />
+  }
 }
+
+<sc-confirm-dialog
+  [open]="showCancelConfirm()"
+  [title]="'orders.cancelOrder' | t"
+  [message]="'orders.cancelConfirm' | t"
+  [confirmLabel]="'orders.cancelOrder' | t"
+  variant="danger"
+  (confirmed)="cancelOrder()"
+  (cancelled)="showCancelConfirm.set(false)" />
+
+<sc-confirm-dialog
+  [open]="showReceiveConfirm()"
+  [title]="'orders.markReceived' | t"
+  [message]="'orders.markReceivedConfirm' | t"
+  [confirmLabel]="'orders.markReceived' | t"
+  variant="primary"
+  (confirmed)="confirmReceived()"
+  (cancelled)="showReceiveConfirm.set(false)" />

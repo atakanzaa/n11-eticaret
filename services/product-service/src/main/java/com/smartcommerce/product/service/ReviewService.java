@@ -8,6 +8,7 @@ import com.smartcommerce.common.events.Topics;
 import com.smartcommerce.common.events.payload.ReviewEventPayload;
 import com.smartcommerce.product.api.dto.*;
 import com.smartcommerce.product.api.mapper.ReviewMapper;
+import com.smartcommerce.product.client.OrderClient;
 import com.smartcommerce.product.domain.*;
 import com.smartcommerce.product.repository.*;
 import com.smartcommerce.product.event.outbox.OutboxService;
@@ -31,6 +32,7 @@ public class ReviewService {
     private final ReviewReportRepository reviewReportRepository;
     private final ReviewMapper reviewMapper;
     private final OutboxService outboxService;
+    private final OrderClient orderClient;
 
     // ── List (public) ─────────────────────────────────────────────────
     @Transactional(readOnly = true)
@@ -61,6 +63,12 @@ public class ReviewService {
             .map(reviewMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<ReviewResponse> listMyReviews(UUID userId, Pageable pageable) {
+        return reviewRepository.findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId, pageable)
+            .map(reviewMapper::toResponse);
+    }
+
     // ── Create ────────────────────────────────────────────────────────
     @Transactional
     public ReviewResponse create(UUID productId, UUID userId, String userDisplayName, CreateReviewRequest request) {
@@ -72,6 +80,26 @@ public class ReviewService {
                 "Bu urun icin zaten bir degerlendirmeniz var.");
         }
 
+        // Verified-purchase doğrulaması: orderId verilmişse, gerçekten user'a ait
+        // ve productId'yi içermesi şart. Aksi halde verifiedPurchase=false olur.
+        boolean verified = false;
+        UUID orderIdToStore = null;
+        if (request.orderId() != null) {
+            try {
+                var order = orderClient.getById(request.orderId());
+                boolean ownsOrder = order.userId() != null && order.userId().equals(userId);
+                boolean containsProduct = order.items() != null
+                    && order.items().stream().anyMatch(it -> productId.equals(it.productId()));
+                if (ownsOrder && containsProduct) {
+                    verified = true;
+                    orderIdToStore = request.orderId();
+                }
+            } catch (Exception e) {
+                // Order service erişilemezse: review yine de oluşur ama verifiedPurchase=false
+                verified = false;
+            }
+        }
+
         var review = Review.builder()
             .productId(productId)
             .userId(userId)
@@ -80,8 +108,8 @@ public class ReviewService {
             .title(request.title())
             .comment(request.comment())
             .variantInfo(request.variantInfo())
-            .orderId(request.orderId())
-            .verifiedPurchase(request.orderId() != null)
+            .orderId(orderIdToStore)
+            .verifiedPurchase(verified)
             .helpfulCount(0)
             .unhelpfulCount(0)
             .status(ReviewStatus.PENDING)
@@ -294,15 +322,25 @@ public class ReviewService {
     }
 
     private ReviewEventPayload buildPayload(Review review) {
+        return buildPayload(review, null);
+    }
+
+    /**
+     * @param previousRating non-null for UPDATE/DELETE so downstream (seller rating)
+     *                       can run differential aggregation. Null on CREATE/APPROVE.
+     */
+    private ReviewEventPayload buildPayload(Review review, Integer previousRating) {
         return ReviewEventPayload.builder()
             .reviewId(review.getId())
             .productId(review.getProductId())
             .userId(review.getUserId())
+            .orderId(review.getOrderId())
             .rating(review.getRating())
             .title(review.getTitle())
             .status(review.getStatus().name())
             .rejectionReason(review.getRejectionReason())
             .verifiedPurchase(review.isVerifiedPurchase())
+            .previousRating(previousRating)
             .occurredAt(Instant.now())
             .build();
     }

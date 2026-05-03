@@ -41,6 +41,16 @@ public class InventoryController {
         return inventoryService.getByOfferId(offerId);
     }
 
+    /**
+     * Bulk lookup used by catalog-service to aggregate totalStock for the
+     * search projection. Internal — exposed under /internal/** which
+     * SecurityConfig already permits without JWT (network-trusted).
+     */
+    @GetMapping("/internal/by-offers")
+    public java.util.List<InventoryItemResponse> getByOfferIds(@RequestParam java.util.List<UUID> ids) {
+        return inventoryService.getByOfferIds(ids);
+    }
+
     @PutMapping("/offers/{offerId}/stock")
     @PreAuthorize("hasRole('SELLER')")
     public InventoryItemResponse adjustStock(@AuthenticationPrincipal String userId,

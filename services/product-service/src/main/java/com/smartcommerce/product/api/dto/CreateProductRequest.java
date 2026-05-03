@@ -13,6 +13,7 @@ public record CreateProductRequest(
     @Size(max = 1000) String shortDescription,
     UUID brandId,
     @NotNull UUID categoryId,
-    Map<String, Object> attributes
+    Map<String, Object> attributes,
+    @Size(max = 32) String barcode
 ) {
 }

@@ -45,6 +45,17 @@ public class PaymentController {
         return paymentService.refund(id, request);
     }
 
+    /**
+     * Internal endpoint used by other services (e.g. order-service when a user
+     * cancels a CONFIRMED order). Permitted via SecurityConfig matcher
+     * `/api/payments/internal/**`. Network isolation between services is the
+     * trust boundary for this path.
+     */
+    @PostMapping("/internal/{id}/refund")
+    public RefundResponse internalRefund(@PathVariable UUID id, @Valid @RequestBody RefundRequest request) {
+        return paymentService.refund(id, request);
+    }
+
     private String extractIp(HttpServletRequest request) {
         var xff = request.getHeader("X-Forwarded-For");
         return xff != null ? xff.split(",")[0].trim() : request.getRemoteAddr();

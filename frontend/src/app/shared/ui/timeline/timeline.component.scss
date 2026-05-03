@@ -9,7 +9,7 @@
 .event {
   position: relative;
   padding-left: 24px;
-  padding-bottom: 24px;
+  padding-bottom: 28px;
 
   &:last-child { padding-bottom: 0; }
 }
@@ -22,7 +22,7 @@
   height: 12px;
   border-radius: 50%;
   background: var(--sc-border-strong);
-  border: 2px solid var(--sc-surface);
+  border: 2px solid var(--sc-bg);
 }
 
 .line {
@@ -31,11 +31,12 @@
   top: 16px;
   bottom: 0;
   width: 2px;
-  background: var(--sc-border);
+  background: var(--sc-border-strong);
+  opacity: 0.5;
 }
 
 .done .dot { background: var(--sc-success); }
-.done .line { background: var(--sc-success); opacity: 0.3; }
+.done .line { background: var(--sc-success); opacity: 0.35; }
 .active .dot {
   background: var(--sc-primary);
   box-shadow: 0 0 0 4px var(--sc-primary-50);
@@ -51,4 +52,4 @@
   time { font-size: 12px; color: var(--sc-text-faint); }
 }
 
-.pending .content strong { color: var(--sc-text-faint); }
+.pending .content strong { color: var(--sc-text-muted); }

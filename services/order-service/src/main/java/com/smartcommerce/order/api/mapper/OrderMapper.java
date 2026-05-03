@@ -12,6 +12,7 @@ public class OrderMapper {
     public OrderResponse toResponse(Order order) {
         return new OrderResponse(order.getId(), order.getOrderNumber(), order.getUserId(), order.getStatus(),
             order.getGrandTotal(), order.getCurrency(), order.getSagaState(), order.getExpiresAt(),
+            order.getCreatedAt(), order.getConfirmedAt(), order.getDeliveredAt(),
             order.getItems().stream().map(this::toResponse).toList());
     }
 
@@ -46,7 +47,7 @@ public class OrderMapper {
         var items = order.getItems().stream()
             .map(i -> new OrderInternalResponse.OrderInternalItem(
                 i.getOfferId(), i.getProductId(), i.getSellerId(), i.getQuantity(),
-                i.getUnitPrice(), i.getProductTitle()))
+                i.getUnitPrice(), i.getLineTotal(), i.getProductTitle()))
             .toList();
         return new OrderInternalResponse(
             order.getId(), order.getUserId(), order.getStatus().name(),

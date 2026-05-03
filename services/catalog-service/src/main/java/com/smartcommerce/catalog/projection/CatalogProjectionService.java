@@ -1,5 +1,6 @@
 package com.smartcommerce.catalog.projection;
 
+import com.smartcommerce.catalog.client.InventoryClient;
 import com.smartcommerce.catalog.client.ProductClient;
 import com.smartcommerce.catalog.domain.ProductDocument;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.UUID;
 public class CatalogProjectionService {
 
     private final ProductClient productClient;
+    private final InventoryClient inventoryClient;
     private final CatalogIndexService indexService;
 
     public void rebuildProductDocument(String productId) {
@@ -40,6 +42,28 @@ public class CatalogProjectionService {
                 .distinct()
                 .toList();
 
+            // Aggregate available stock across all offers. Inventory lookup is
+            // best-effort — if it fails, we fall back to "stock unknown but
+            // probably-available" so search results aren't accidentally hidden.
+            int totalStock = 0;
+            try {
+                var offerIds = offers.stream()
+                    .map(ProductClient.OfferSummary::id)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+                if (!offerIds.isEmpty()) {
+                    var items = inventoryClient.byOfferIds(offerIds);
+                    if (items != null) {
+                        totalStock = items.stream()
+                            .mapToInt(InventoryClient.InventorySummary::availableQuantity)
+                            .sum();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Inventory aggregate failed for product {}, indexing with totalStock=0: {}",
+                    productId, e.getMessage());
+            }
+
             float averageRating = product.averageRating() != null
                 ? product.averageRating().floatValue() : 0f;
             int reviewCount = product.reviewCount() != null
@@ -58,8 +82,8 @@ public class CatalogProjectionService {
                 minPrice,
                 maxPrice,
                 offers.size(),
-                0,
-                true,
+                totalStock,
+                totalStock > 0,
                 averageRating,
                 reviewCount,
                 product.primaryImageUrl(),

@@ -77,10 +77,37 @@ public class SellerService {
     @Transactional
     public SellerDto update(UUID userId, UpdateSellerRequest request) {
         var seller = sellerRepository.findByUserId(userId)
-            .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND,
-                "Seller not found for user: " + userId));
-        seller.setStoreName(request.storeName());
-        seller.setDescription(request.description());
+            .orElseGet(() -> createSeller(userId, "MaÄŸazam-" + userId.toString().substring(0, 8)));
+        if (request.storeName() != null) {
+            seller.setStoreName(request.storeName());
+        }
+        if (request.description() != null) {
+            seller.setDescription(request.description());
+        }
         return sellerMapper.toDto(sellerRepository.save(seller));
+    }
+
+    private Seller createSeller(UUID userId, String storeName) {
+        var seller = Seller.builder()
+            .userId(userId)
+            .storeName(storeName)
+            .status(SellerStatus.PENDING)
+            .commissionRate(new BigDecimal("0.0500"))
+            .rating(BigDecimal.ZERO)
+            .ratingCount(0)
+            .build();
+        seller = sellerRepository.save(seller);
+        log.info("Created seller record for user {}: sellerId={}", userId, seller.getId());
+
+        outboxService.publish(
+            Topics.SELLER_REGISTERED, EventType.SELLER_REGISTERED,
+            seller.getId().toString(), "SELLER",
+            SellerRegisteredPayload.builder()
+                .sellerId(seller.getId())
+                .userId(userId)
+                .storeName(seller.getStoreName())
+                .build()
+        );
+        return seller;
     }
 }

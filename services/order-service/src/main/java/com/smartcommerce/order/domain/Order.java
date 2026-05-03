@@ -80,6 +80,8 @@ public class Order {
     private Instant confirmedAt;
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
+    @Column(name = "delivered_at")
+    private Instant deliveredAt;
     @Column(name = "expires_at")
     private Instant expiresAt;
 
@@ -108,5 +110,20 @@ public class Order {
 
     public boolean canCancel() {
         return status == OrderStatus.CREATED || status == OrderStatus.PAYMENT_PENDING;
+    }
+
+    /**
+     * Enforces the OrderStatus state machine. Throws IllegalStateException when
+     * the requested transition is not allowed by OrderStatus.canTransitionTo,
+     * preventing data-integrity bugs like CANCELLED → CONFIRMED. Self-transitions
+     * (status == target) are no-ops and accepted.
+     */
+    public void transitionTo(OrderStatus target) {
+        if (target == null) throw new IllegalArgumentException("target status is null");
+        if (this.status != null && !this.status.canTransitionTo(target)) {
+            throw new IllegalStateException(
+                "Illegal order status transition: " + this.status + " -> " + target + " (orderId=" + id + ")");
+        }
+        this.status = target;
     }
 }

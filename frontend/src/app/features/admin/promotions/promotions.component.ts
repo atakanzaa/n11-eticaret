@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { CouponApi } from '@core/api/coupon.api';
 import { CouponResponse, CreateCouponRequest, DiscountType } from '@core/models/coupon.types';
 import { ToastService } from '@core/toast.service';
+import { I18nService } from '@core/i18n/i18n.service';
 import { TPipe } from '@shared/i18n.pipe';
 import { SpinnerComponent } from '@shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
@@ -12,6 +13,7 @@ import { StatusBadgeComponent } from '@shared/ui/status-badge/status-badge.compo
 import { ConfirmDialogComponent } from '@shared/ui/confirm-dialog/confirm-dialog.component';
 import { ModalComponent } from '@shared/ui/modal/modal.component';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
+import { PaginationComponent } from '@shared/ui/pagination/pagination.component';
 import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
 
 @Component({
@@ -28,6 +30,7 @@ import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
     ConfirmDialogComponent,
     ModalComponent,
     FormFieldComponent,
+    PaginationComponent,
     CurrencyFormatPipe,
   ],
   templateUrl: './promotions.component.html',
@@ -36,12 +39,41 @@ import { CurrencyFormatPipe } from '@shared/pipes/currency-format.pipe';
 export class AdminPromotionsComponent implements OnInit {
   private readonly couponApi = inject(CouponApi);
   private readonly toast = inject(ToastService);
+  private readonly i18n = inject(I18nService);
 
   readonly coupons = signal<CouponResponse[]>([]);
   readonly loading = signal(true);
   readonly creating = signal(false);
   readonly showCreateModal = signal(false);
   readonly deactivateDialogOpen = signal(false);
+
+  // Client-side pagination
+  readonly pageSize = 20;
+  readonly currentPage = signal(0);
+
+  readonly sortedCoupons = computed(() => {
+    return [...this.coupons()].sort((a, b) => {
+      const aTime = a.validUntil ? new Date(a.validUntil).getTime() : 0;
+      const bTime = b.validUntil ? new Date(b.validUntil).getTime() : 0;
+      return bTime - aTime;
+    });
+  });
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.sortedCoupons().length / this.pageSize)),
+  );
+
+  readonly pagedCoupons = computed(() => {
+    const start = this.currentPage() * this.pageSize;
+    return this.sortedCoupons().slice(start, start + this.pageSize);
+  });
+
+  readonly isFirstPage = computed(() => this.currentPage() === 0);
+  readonly isLastPage = computed(() => this.currentPage() >= this.totalPages() - 1);
+
+  onPageChange(page: number): void {
+    this.currentPage.set(Math.max(0, Math.min(page, this.totalPages() - 1)));
+  }
 
   private deactivateTargetId: string | null = null;
 
@@ -79,7 +111,7 @@ export class AdminPromotionsComponent implements OnInit {
     try {
       const updated = await firstValueFrom(this.couponApi.deactivate(this.deactivateTargetId));
       this.coupons.update((arr) => arr.map((c) => (c.id === this.deactivateTargetId ? updated : c)));
-      this.toast.show('Kupon kapatildi', 'success');
+      this.toast.show(this.i18n.t('admin.couponDeactivated'), 'success');
     } catch {
       /* error.interceptor handles toast */
     } finally {
@@ -103,7 +135,7 @@ export class AdminPromotionsComponent implements OnInit {
       };
       const created = await firstValueFrom(this.couponApi.create(request));
       this.coupons.update((arr) => [created, ...arr]);
-      this.toast.show('Kupon olusturuldu', 'success');
+      this.toast.show(this.i18n.t('admin.couponCreated'), 'success');
       this.showCreateModal.set(false);
       this.resetForm();
     } catch {

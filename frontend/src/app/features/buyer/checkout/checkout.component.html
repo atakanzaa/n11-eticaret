@@ -61,8 +61,12 @@
             <h3 class="step-title">Odeme yontemi</h3>
 
             <form [formGroup]="form" novalidate>
+              @if (paymentError()) {
+                <p class="error" role="alert">{{ paymentError() }}</p>
+              }
               <div class="card-form" formGroupName="card">
-                <sc-form-field label="Kart numarasi" [required]="true">
+                <sc-form-field label="Kart numarasi" [required]="true"
+                               [error]="cardNumberError()">
                   <input
                     class="sc-input"
                     formControlName="number"
@@ -72,7 +76,8 @@
                     (input)="formatCardNumber($event)" />
                 </sc-form-field>
 
-                <sc-form-field label="Kart uzerindeki isim" [required]="true">
+                <sc-form-field label="Kart uzerindeki isim" [required]="true"
+                               [error]="cardHolderError()">
                   <input
                     class="sc-input"
                     formControlName="holderName"
@@ -81,7 +86,8 @@
                 </sc-form-field>
 
                 <div class="card-row">
-                  <sc-form-field label="Son kullanma tarihi" [required]="true">
+                  <sc-form-field label="Son kullanma tarihi" [required]="true"
+                                 [error]="cardExpireError()">
                     <div class="expire-inputs">
                       <input
                         class="sc-input expire-input"
@@ -97,7 +103,8 @@
                     </div>
                   </sc-form-field>
 
-                  <sc-form-field label="CVV" [required]="true">
+                  <sc-form-field label="CVV" [required]="true"
+                                 [error]="cardCvcError()">
                     <input
                       class="sc-input"
                       formControlName="cvc"

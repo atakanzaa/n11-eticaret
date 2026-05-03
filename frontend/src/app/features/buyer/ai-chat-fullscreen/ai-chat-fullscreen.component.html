@@ -9,7 +9,7 @@
     @if (assistant.messages().length === 0) {
       <div class="welcome">
         <h2>{{ 'ai.welcome' | t }}</h2>
-        <p class="muted">Urun onerileri, hediye fikirleri veya kategori karsilastirmalari icin sorabilirsiniz.</p>
+        <p class="muted">{{ 'ai.welcomeSubtitle' | t }}</p>
       </div>
     }
     @for (m of assistant.messages(); track $index) {
@@ -34,7 +34,7 @@
       autofocus
     />
     <button type="submit" class="send" [disabled]="!draft.trim() || assistant.loading()">
-      Gonder &rarr;
+      {{ 'ai.send' | t }} &rarr;
     </button>
   </form>
 </div>

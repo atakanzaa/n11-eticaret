@@ -2,7 +2,6 @@ package com.smartcommerce.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcommerce.auth.api.dto.*;
-import com.smartcommerce.auth.domain.RoleName;
 import com.smartcommerce.common.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Set;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,8 +33,7 @@ class AuthServiceIT extends AbstractIntegrationTest {
         var request = new RegisterRequest(
             "test_" + System.currentTimeMillis() + "@example.com",
             "Password123!",
-            "Test", "User", null,
-            Set.of(RoleName.CUSTOMER)
+            "Test", "User", null
         );
 
         mockMvc.perform(post("/api/auth/register")
@@ -48,12 +46,32 @@ class AuthServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("register_whenSellerRoleSubmitted_thenCreatesCustomerOnly")
+    void register_whenSellerRoleSubmitted_thenCreatesCustomerOnly() throws Exception {
+        var request = Map.of(
+            "email", "customer_only_" + System.currentTimeMillis() + "@example.com",
+            "password", "Password123!",
+            "firstName", "Customer",
+            "lastName", "Only",
+            "roles", java.util.List.of("SELLER", "ADMIN")
+        );
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.user.roles[?(@ == 'CUSTOMER')]").exists())
+            .andExpect(jsonPath("$.user.roles[?(@ == 'SELLER')]").doesNotExist())
+            .andExpect(jsonPath("$.user.roles[?(@ == 'ADMIN')]").doesNotExist());
+    }
+
+    @Test
     @DisplayName("login_whenValidCredentials_thenReturnsTokens")
     void login_whenValidCredentials_thenReturnsTokens() throws Exception {
         var email = "login_" + System.currentTimeMillis() + "@example.com";
         var password = "Password123!";
 
-        var registerRequest = new RegisterRequest(email, password, "Login", "Test", null, Set.of(RoleName.CUSTOMER));
+        var registerRequest = new RegisterRequest(email, password, "Login", "Test", null);
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)))
@@ -71,7 +89,7 @@ class AuthServiceIT extends AbstractIntegrationTest {
     @DisplayName("refresh_whenValidToken_thenReturnsNewTokens")
     void refresh_whenValidToken_thenReturnsNewTokens() throws Exception {
         var email = "refresh_" + System.currentTimeMillis() + "@example.com";
-        var registerRequest = new RegisterRequest(email, "Password123!", "Refresh", "Test", null, Set.of(RoleName.CUSTOMER));
+        var registerRequest = new RegisterRequest(email, "Password123!", "Refresh", "Test", null);
 
         var result = mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -93,7 +111,7 @@ class AuthServiceIT extends AbstractIntegrationTest {
     @DisplayName("refresh_whenTokenReused_thenReturns401")
     void refresh_whenTokenReused_thenReturns401() throws Exception {
         var email = "reuse_" + System.currentTimeMillis() + "@example.com";
-        var registerRequest = new RegisterRequest(email, "Password123!", "Reuse", "Test", null, Set.of(RoleName.CUSTOMER));
+        var registerRequest = new RegisterRequest(email, "Password123!", "Reuse", "Test", null);
 
         var result = mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -120,7 +138,7 @@ class AuthServiceIT extends AbstractIntegrationTest {
     @DisplayName("register_whenDuplicateEmail_thenReturns409")
     void register_whenDuplicateEmail_thenReturns409() throws Exception {
         var email = "dup_" + System.currentTimeMillis() + "@example.com";
-        var request = new RegisterRequest(email, "Password123!", "Dup", "Test", null, Set.of(RoleName.CUSTOMER));
+        var request = new RegisterRequest(email, "Password123!", "Dup", "Test", null);
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -137,7 +155,7 @@ class AuthServiceIT extends AbstractIntegrationTest {
     @DisplayName("login_whenWrongPassword_thenReturns401")
     void login_whenWrongPassword_thenReturns401() throws Exception {
         var email = "wrongpw_" + System.currentTimeMillis() + "@example.com";
-        var registerRequest = new RegisterRequest(email, "Password123!", "Wrong", "PW", null, Set.of(RoleName.CUSTOMER));
+        var registerRequest = new RegisterRequest(email, "Password123!", "Wrong", "PW", null);
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -145,8 +163,38 @@ class AuthServiceIT extends AbstractIntegrationTest {
             .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new LoginRequest(email, "WrongPassword!"))))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(new LoginRequest(email, "WrongPassword!"))))
             .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("becomeSeller_whenCalledTwice_thenReturnsSellerSessionBothTimes")
+    void becomeSeller_whenCalledTwice_thenReturnsSellerSessionBothTimes() throws Exception {
+        var email = "seller_" + System.currentTimeMillis() + "@example.com";
+        var registerRequest = new RegisterRequest(email, "Password123!", "Seller", "Test", null);
+
+        var registerResult = mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(registerRequest)))
+            .andExpect(status().isCreated())
+            .andReturn();
+        var registered = objectMapper.readValue(registerResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        var firstResult = mockMvc.perform(post("/api/auth/become-seller")
+                .header("Authorization", "Bearer " + registered.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.user.roles[?(@ == 'SELLER')]").exists())
+            .andReturn();
+        var sellerSession = objectMapper.readValue(firstResult.getResponse().getContentAsString(), AuthResponse.class);
+
+        mockMvc.perform(post("/api/auth/become-seller")
+                .header("Authorization", "Bearer " + sellerSession.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.user.roles[?(@ == 'SELLER')]").exists());
     }
 }

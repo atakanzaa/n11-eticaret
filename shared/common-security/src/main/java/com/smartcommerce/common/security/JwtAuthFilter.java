@@ -65,6 +65,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         var path = request.getServletPath();
-        return path.startsWith("/api/auth/") || path.startsWith("/actuator/") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs");
+        // Only the truly anonymous auth endpoints skip the filter. Other
+        // /api/auth/* operations (e.g. become-seller, change-password) need
+        // the JWT to be parsed so @PreAuthorize sees the authenticated user.
+        if ("/api/auth/login".equals(path)
+            || "/api/auth/register".equals(path)
+            || "/api/auth/refresh".equals(path)) {
+            return true;
+        }
+        return path.startsWith("/actuator/") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs");
     }
 }

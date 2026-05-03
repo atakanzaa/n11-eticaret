@@ -49,6 +49,13 @@ public class ReviewController {
             .orElseGet(() -> org.springframework.http.ResponseEntity.<ReviewResponse>noContent().build());
     }
 
+    @GetMapping("/api/reviews/my")
+    @PreAuthorize("isAuthenticated()")
+    public Page<ReviewResponse> listMyReviews(@AuthenticationPrincipal String userId,
+                                              Pageable pageable) {
+        return reviewService.listMyReviews(UUID.fromString(userId), pageable);
+    }
+
     @PostMapping("/api/products/{productId}/reviews")
     @ResponseStatus(HttpStatus.CREATED)
     public ReviewResponse create(@PathVariable UUID productId,

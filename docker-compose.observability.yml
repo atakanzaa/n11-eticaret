@@ -51,6 +51,10 @@ services:
   tempo:
     image: grafana/tempo:latest
     container_name: smartcommerce-tempo
+    # Tempo's container drops privileges to a non-root UID. The `latest` image
+    # changed default UID, breaking write access to mounted /tmp/tempo. Pin it
+    # to root explicitly so the volume's directories can be created.
+    user: "0:0"
     ports:
       - "3200:3200"
       - "4317:4317"

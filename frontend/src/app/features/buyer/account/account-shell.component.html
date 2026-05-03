@@ -4,7 +4,9 @@
     <aside class="nav">
       <a routerLink="/hesap/siparislerim" routerLinkActive="active">{{ 'nav.orders' | t }}</a>
       <a routerLink="/hesap/iadelerim" routerLinkActive="active">{{ 'nav.returns' | t }}</a>
-      <a routerLink="/hesap/kuponlarim" routerLinkActive="active">Kuponlarım</a>
+      <a routerLink="/hesap/yorumlarim" routerLinkActive="active">{{ 'account.myReviewsTitle' | t }}</a>
+      <a routerLink="/hesap/favorilerim" routerLinkActive="active">{{ 'account.favouritesTitle' | t }}</a>
+      <a routerLink="/hesap/kuponlarim" routerLinkActive="active">{{ 'nav.coupons' | t }}</a>
       <a routerLink="/hesap/profil" routerLinkActive="active">{{ 'nav.profile' | t }}</a>
     </aside>
     <main><router-outlet /></main>

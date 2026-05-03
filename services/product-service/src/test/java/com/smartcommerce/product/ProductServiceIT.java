@@ -31,7 +31,7 @@ class ProductServiceIT extends AbstractIntegrationTest {
         var sellerId = UUID.randomUUID();
         var product = productService.create(new CreateProductRequest(
             "Akilli Telefon Çığır", "A flagship phone", "Short", null,
-            ELECTRONICS_CATEGORY_ID, Map.of("color", "black")));
+            ELECTRONICS_CATEGORY_ID, Map.of("color", "black"), null));
 
         var offer = offerService.create(sellerId, new CreateOfferRequest(
             product.id(), "SKU-TEST-1", new BigDecimal("100.00"), new BigDecimal("120.00"),
@@ -57,7 +57,7 @@ class ProductServiceIT extends AbstractIntegrationTest {
         var sellerId = UUID.randomUUID();
         var otherSellerId = UUID.randomUUID();
         var product = productService.create(new CreateProductRequest(
-            "Laptop Test", null, null, null, ELECTRONICS_CATEGORY_ID, Map.of()));
+            "Laptop Test", null, null, null, ELECTRONICS_CATEGORY_ID, Map.of(), null));
         var offer = offerService.create(sellerId, new CreateOfferRequest(
             product.id(), null, new BigDecimal("200.00"), null, CargoProvider.DEFAULT,
             BigDecimal.ZERO, 3, null, 0));
@@ -72,7 +72,7 @@ class ProductServiceIT extends AbstractIntegrationTest {
     void duplicateOffer_conflict() {
         var sellerId = UUID.randomUUID();
         var product = productService.create(new CreateProductRequest(
-            "Tablet Test", null, null, null, ELECTRONICS_CATEGORY_ID, Map.of()));
+            "Tablet Test", null, null, null, ELECTRONICS_CATEGORY_ID, Map.of(), null));
         var request = new CreateOfferRequest(product.id(), null, new BigDecimal("300.00"),
             null, CargoProvider.DEFAULT, BigDecimal.ZERO, 3, null, 0);
 

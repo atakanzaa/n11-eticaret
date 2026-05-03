@@ -1,5 +1,6 @@
 package com.smartcommerce.seller.event.consumer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcommerce.common.events.BaseEvent;
 import com.smartcommerce.common.events.EventType;
 import com.smartcommerce.common.events.Topics;
@@ -28,16 +29,20 @@ public class UserRegisteredConsumer {
     private final SellerRepository sellerRepository;
     private final ProcessedEventRepository processedEventRepository;
     private final OutboxService outboxService;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = Topics.USER_REGISTERED, groupId = "seller-service")
     @Transactional
-    public void onUserRegistered(BaseEvent<UserRegisteredPayload> event) {
+    public void onUserRegistered(BaseEvent<?> event) {
         if (event.getEventId() != null && processedEventRepository.existsById(event.getEventId())) {
             log.debug("Event {} already processed, skipping", event.getEventId());
             return;
         }
 
-        var payload = event.getPayload();
+        // BaseEvent<T> erases T at runtime, so Jackson hands us a LinkedHashMap.
+        // Convert explicitly to the typed payload before working with it.
+        var payload = event.getPayload() == null ? null
+            : objectMapper.convertValue(event.getPayload(), UserRegisteredPayload.class);
         if (payload == null || payload.getRoles() == null || !payload.getRoles().contains("SELLER")) {
             return;
         }

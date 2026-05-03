@@ -30,6 +30,7 @@ class CheckoutOrchestratorTest {
     @Mock InventoryClient inventoryClient;
     @Mock FraudDetectionClient fraudDetectionClient;
     @Mock PromotionClient promotionClient;
+    @Mock PaymentClient paymentClient;
     @Mock OrderRepository orderRepository;
     @Mock SagaLogRepository sagaLogRepository;
     @Mock IdempotencyKeyRepository idempotencyKeyRepository;
@@ -41,7 +42,7 @@ class CheckoutOrchestratorTest {
     @BeforeEach
     void setUp() {
         orchestrator = new CheckoutOrchestrator(cartClient, userClient, inventoryClient, fraudDetectionClient,
-            promotionClient, orderRepository, sagaLogRepository, idempotencyKeyRepository, outboxService,
+            promotionClient, paymentClient, orderRepository, sagaLogRepository, idempotencyKeyRepository, outboxService,
             new OrderMapper(), objectMapper, new SimpleMeterRegistry());
     }
 
@@ -72,7 +73,7 @@ class CheckoutOrchestratorTest {
         var userId = UUID.randomUUID();
         var request = new CheckoutRequest(UUID.randomUUID(), "MOCK_CARD", null);
         var response = new CheckoutResponse(UUID.randomUUID(), "SC123", "PAYMENT_PENDING",
-            new BigDecimal("120.00"), "/payments/mock/SC123", Instant.now());
+            new BigDecimal("120.00"), Instant.now());
         var hash = DigestUtils.md5DigestAsHex((userId + ":" + request.addressId() + ":" + request.paymentMethod())
             .getBytes(StandardCharsets.UTF_8));
         when(idempotencyKeyRepository.findById("idem-1")).thenReturn(Optional.of(IdempotencyKey.builder()

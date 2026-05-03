@@ -14,6 +14,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * Idempotency note: catalog-service has no Postgres backing store, so we don't
+ * persist a `processed_events` table. Idempotency is achieved by the
+ * rebuild-from-source pattern — every handler resolves the current state from
+ * product-service and writes a full document keyed by productId into OpenSearch.
+ * Duplicate Kafka deliveries result in identical re-indexing, not divergent data.
+ * Same-aggregate ordering is preserved via the outbox partition key (aggregateId).
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -68,6 +76,22 @@ public class CatalogProjectionConsumer {
             projectionService.rebuildProductDocument(offer.productId().toString());
         } catch (Exception e) {
             log.error("Failed to resolve offer {} for stock event", offerIdText, e);
+        }
+    }
+
+    /**
+     * Rating changes from review moderation/edit/delete propagate to the search
+     * index so listings reflect fresh average rating + review count.
+     */
+    @KafkaListener(
+        topics = {Topics.REVIEW_APPROVED, Topics.REVIEW_REJECTED, Topics.REVIEW_DELETED, Topics.REVIEW_UPDATED},
+        groupId = "catalog-service"
+    )
+    public void onReviewChanged(BaseEvent<?> event) {
+        var payload = objectMapper.convertValue(event.getPayload(), JsonNode.class);
+        var productId = textValue(payload, "productId");
+        if (productId != null) {
+            projectionService.rebuildProductDocument(productId);
         }
     }
 
