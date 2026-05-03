@@ -127,8 +127,10 @@ export class AdminPromotionsComponent implements OnInit {
         name: this.newCoupon.name,
         discountType: this.newCoupon.discountType,
         discountValue: this.newCoupon.discountValue,
-        validFrom: this.newCoupon.validFrom,
-        validUntil: this.newCoupon.validUntil,
+        // Backend java.time.Instant — date input "2026-05-03" must become ISO
+        // instant; midnight UTC of the chosen day is fine for coupon windows.
+        validFrom: this.toIsoInstant(this.newCoupon.validFrom),
+        validUntil: this.toIsoInstant(this.newCoupon.validUntil, /*endOfDay*/ true),
         totalUsageLimit: this.newCoupon.totalUsageLimit,
         perUserLimit: this.newCoupon.perUserLimit,
         minimumOrderAmount: this.newCoupon.minimumOrderAmount,
@@ -143,6 +145,18 @@ export class AdminPromotionsComponent implements OnInit {
     } finally {
       this.creating.set(false);
     }
+  }
+
+  /**
+   * `<input type="date">` produces "YYYY-MM-DD" with no time/zone, but the
+   * backend DTO is java.time.Instant. Convert to a full ISO instant —
+   * midnight UTC for validFrom, end-of-day UTC for validUntil so the coupon
+   * stays valid through the selected day.
+   */
+  private toIsoInstant(date: string, endOfDay = false): string {
+    if (!date) return date;
+    if (date.includes('T')) return date; // already ISO
+    return endOfDay ? `${date}T23:59:59Z` : `${date}T00:00:00Z`;
   }
 
   formatValue(c: CouponResponse): string {
