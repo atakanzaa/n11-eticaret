@@ -32,8 +32,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         "/api/reviews",
         // Campaign (active-by-offer is public for product detail badge)
         "/api/campaigns/active-by-offer",
-        // Payment provider 3DS callback — iyzico can't include a JWT
-        "/api/payments/3ds-callback",
+        // Payment provider 3DS callback — iyzico can't include a JWT.
+        // Real endpoint is /api/payments/iyzico/callback (see IyzicoWebhookController).
+        "/api/payments/iyzico/callback",
         // Infrastructure
         "/actuator", "/swagger-ui", "/v3/api-docs"
     );
