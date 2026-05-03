@@ -236,10 +236,13 @@ export class ProductComponent implements OnInit {
       return;
     }
 
-    // Verified purchase: ?orderId=... query → review form'a yansıt; auto-open form
+    // Verified purchase: ?orderId=... query → review form'a yansıt ve auto-open.
+    // Sipariş detayından "Bu ürünü değerlendir" butonu bu route'a yolluyor; form
+    // kapalı geldiğinde kullanıcı butonu yeniden bulup açmak zorunda kalıyordu.
     const orderIdParam = this.route.snapshot.queryParamMap.get('orderId');
     if (orderIdParam) {
       this.reviewOrderId.set(orderIdParam);
+      this.showReviewForm.set(true);
     }
 
     try {

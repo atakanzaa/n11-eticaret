@@ -53,7 +53,11 @@ jobs:
             bash infra/kafka/create-topics.sh || true
 
             echo "==> Application services"
-            docker compose -f docker-compose.services.yml up -d --build
+            # --force-recreate: docker compose otherwise reuses running containers
+            # when only .env changed (image hash stable). Without this, a new
+            # FRONTEND_URL or APP_ALLOWED_ORIGINS sat in .env without ever
+            # reaching the JVM environment.
+            docker compose -f docker-compose.services.yml up -d --build --force-recreate
 
             echo "==> Observability stack"
             docker compose -f docker-compose.observability.yml up -d
